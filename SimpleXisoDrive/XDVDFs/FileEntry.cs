@@ -144,7 +144,7 @@ public class FileEntry
         if (childOffset != EntryOffset)
             return isoSt.ReadFileEntry(EntrySector, childOffset);
 
-        DebugLogger.WriteLine($"Invalid self-reference in LeftSubTree for entry at sector {EntrySector}, offset {EntryOffset}");
+        // DebugLogger.WriteLine($"Invalid self-reference in LeftSubTree for entry at sector {EntrySector}, offset {EntryOffset}");
         return null;
     }
 
@@ -158,7 +158,7 @@ public class FileEntry
         if (childOffset != EntryOffset)
             return isoSt.ReadFileEntry(EntrySector, childOffset);
 
-        DebugLogger.WriteLine($"Invalid self-reference in RightSubTree for entry at sector {EntrySector}, offset {EntryOffset}");
+        // DebugLogger.WriteLine($"Invalid self-reference in RightSubTree for entry at sector {EntrySector}, offset {EntryOffset}");
         return null;
     }
 

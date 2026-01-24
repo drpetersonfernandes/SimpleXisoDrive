@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using DokanNet;
 using DokanNet.Logging;
 using SimpleXisoDrive.Services;
@@ -12,6 +12,9 @@ file static class Program
 
     public static async Task<int> Main(string[] args)
     {
+        // Hook global exception handlers immediately to catch crashes
+        SetupGlobalExceptionHandlers();
+
         DebugLogger.WriteLine("=== SimpleXisoDrive Started ===");
         DebugLogger.WriteLine($"Arguments: {string.Join(" | ", args)}");
         DebugLogger.WriteLine($"Working Directory: {Environment.CurrentDirectory}");
@@ -161,6 +164,25 @@ file static class Program
         }
     }
 
+    private static void SetupGlobalExceptionHandlers()
+    {
+        // Catches exceptions thrown on the main thread that are not caught
+        AppDomain.CurrentDomain.UnhandledException += static (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                ErrorLogger.LogErrorAsync(ex, "CRITICAL: Unhandled Global Exception").GetAwaiter().GetResult();
+            }
+        };
+
+        // Catches exceptions thrown in background Tasks that were not awaited
+        TaskScheduler.UnobservedTaskException += static (_, e) =>
+        {
+            ErrorLogger.LogErrorAsync(e.Exception, "CRITICAL: Unobserved Task Exception").GetAwaiter().GetResult();
+            e.SetObserved();
+        };
+    }
+
     private static void IsDokanInstalled()
     {
         try
@@ -210,20 +232,6 @@ file static class Program
         }
     }
 
-    private static bool IsAdministrator()
-    {
-        try
-        {
-            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var principal = new System.Security.Principal.WindowsPrincipal(identity);
-            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     private static void PrintUsage()
     {
         var mainModule = Process.GetCurrentProcess().MainModule;
@@ -246,7 +254,7 @@ file static class Program
     private static async Task RunMount(string isoPath, string mountPath, bool debug, bool launch)
     {
         // Check for admin rights for drive letter mounting
-        if (mountPath.EndsWith(":\\", StringComparison.Ordinal) && !IsAdministrator())
+        if (mountPath.EndsWith(":\\", StringComparison.Ordinal) && !CheckAccess.IsAdministrator())
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("WARNING: Administrator privileges are recommended for mounting drive letters.");
@@ -306,6 +314,13 @@ file static class Program
             }
 
             DebugLogger.WriteLine("Unmount signal received. Cleaning up...");
+        }
+        catch (Exception ex)
+        {
+            // This captures failures during the actual Dokan mounting process
+            DebugLogger.WriteLine($"Mount process failed: {ex.Message}");
+            await ErrorLogger.LogErrorAsync(ex, $"Failed to maintain mount for {isoPath} on {mountPath}");
+            throw; // Re-throw so Main can handle the UI/Console feedback
         }
         finally
         {

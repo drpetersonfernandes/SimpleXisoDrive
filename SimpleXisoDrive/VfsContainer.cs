@@ -41,7 +41,9 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             _isoSt.Dispose();
-            ErrorLogger.LogErrorAsync(ex, $"Failed to parse ISO file '{isoPath}'").GetAwaiter().GetResult();
+            // Log specifically that the ISO parsing failed
+            _ = ErrorLogger.LogErrorAsync(ex, $"VfsContainer failed to initialize for ISO: {isoPath}");
+            // Exception is re-thrown and caught by Program.cs, which handles the API reporting.
             throw new InvalidImageException($"Failed to read Xbox ISO: {ex.Message}", ex);
         }
     }

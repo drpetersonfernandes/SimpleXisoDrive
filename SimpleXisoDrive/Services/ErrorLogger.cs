@@ -128,7 +128,9 @@ public static class ErrorLogger
                 applicationName = ApplicationName,
                 version,
                 userInfo = Environment.UserName,
-                environment = $"{osDescription} ({RuntimeInformation.OSArchitecture}) - {frameworkDescription}",
+                framework = frameworkDescription,
+                environment = $"{osDescription} ({RuntimeInformation.OSArchitecture})",
+                isAdmin = CheckAccess.IsAdministrator(),
                 stackTrace = ex.ToString()
             };
 
