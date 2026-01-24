@@ -67,3 +67,4 @@
 /SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.dll
 /SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.exe
 /SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.runtimeconfig.json
+!/SimpleXisoDrive/bin/
