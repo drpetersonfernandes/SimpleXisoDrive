@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,6 +14,7 @@ public static class ErrorLogger
     private const string ApplicationName = "SimpleXisoDrive";
     private static readonly HttpClient HttpClientInstance;
     private static readonly bool IsApiLoggingConfigured;
+    private static readonly object FileLock = new();
 
     private static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
     private static readonly string ErrorLogFilePath = Path.Combine(BaseDirectory, "error.log");
@@ -89,7 +90,10 @@ public static class ErrorLogger
 
         try
         {
-            await File.AppendAllTextAsync(ErrorLogFilePath, logContent, Encoding.UTF8);
+            lock (FileLock)
+            {
+                File.AppendAllText(ErrorLogFilePath, logContent, Encoding.UTF8);
+            }
         }
         catch (Exception writeEx)
         {
@@ -108,6 +112,31 @@ public static class ErrorLogger
             {
                 await Console.Error.WriteLineAsync("Failed to send error details to the remote logging service.");
             }
+        }
+    }
+
+    /// <summary>
+    /// Logs a crash synchronously. Used for global exception handlers where the process is terminating.
+    /// </summary>
+    public static void LogFatalException(Exception ex, string contextMessage)
+    {
+        try
+        {
+            var logContent = FormatErrorMessage(ex, contextMessage);
+
+            Console.Error.WriteLine("\n--- CRITICAL CRASH ---");
+            Console.Error.WriteLine(ex.Message);
+            Console.Error.WriteLine($"Details written to: {ErrorLogFilePath}");
+
+            lock (FileLock)
+            {
+                File.AppendAllText(ErrorLogFilePath, logContent, Encoding.UTF8);
+            }
+        }
+        catch (Exception writeEx)
+        {
+            // Last ditch effort
+            WriteToCriticalLog(writeEx, $"LogFatalException failed. Original: {ex.Message}");
         }
     }
 

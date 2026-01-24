@@ -112,7 +112,12 @@ public class FileEntry
             // Skip the padding bytes
             if (padding > 0)
             {
-                reader.ReadBytes(padding);
+                if (reader.BaseStream.Position + padding > reader.BaseStream.Length)
+                {
+                    throw new EndOfStreamException("End of stream reached while skipping padding bytes");
+                }
+
+                reader.BaseStream.Seek(padding, SeekOrigin.Current);
             }
 
             // Validate the entry

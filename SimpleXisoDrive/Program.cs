@@ -100,19 +100,36 @@ file static class Program
             // --- MODIFIED LOGIC ---
             if (isDragAndDrop)
             {
-                // For drag-and-drop, start the mount task but don't wait for it.
-                // This allows the Main method to continue and wait for user input.
                 var mountTask = RunMount(isoPath, mountPath, debug, launch);
 
-                // The "Mount successful" message is now displayed from within RunMount.
-                DebugLogger.WriteLine("\nPress any key to unmount and exit.");
-                Console.ReadKey(true); // Wait for a key press.
+                // Wait for either the mount to fail OR the user to press a key
+                var keyPressTask = Task.Run(static () =>
+                {
+                    try
+                    {
+                        return Console.ReadKey(true);
+                    }
+                    catch
+                    {
+                        return default;
+                    }
+                });
 
-                DebugLogger.WriteLine("\nUnmount key pressed. Unmounting...");
-                await CancellationTokenSource.CancelAsync(); // Signal the task to unmount.
+                var completedTask = await Task.WhenAny(mountTask, keyPressTask);
 
-                // Now, wait for the unmount and cleanup to complete.
-                await mountTask;
+                if (completedTask == mountTask)
+                {
+                    // The mount task finished (likely failed) before a key was pressed.
+                    // Await it to propagate the exception to the catch blocks below.
+                    await mountTask;
+                }
+                else
+                {
+                    // User pressed a key first.
+                    DebugLogger.WriteLine("\nUnmount key pressed. Unmounting...");
+                    await CancellationTokenSource.CancelAsync();
+                    await mountTask;
+                }
             }
             else
             {
@@ -174,14 +191,14 @@ file static class Program
         {
             if (e.ExceptionObject is Exception ex)
             {
-                ErrorLogger.LogErrorAsync(ex, "CRITICAL: Unhandled Global Exception").GetAwaiter().GetResult();
+                ErrorLogger.LogFatalException(ex, "CRITICAL: Unhandled Global Exception");
             }
         };
 
         // Catches exceptions thrown in background Tasks that were not awaited
         TaskScheduler.UnobservedTaskException += static (_, e) =>
         {
-            ErrorLogger.LogErrorAsync(e.Exception, "CRITICAL: Unobserved Task Exception").GetAwaiter().GetResult();
+            ErrorLogger.LogFatalException(e.Exception, "CRITICAL: Unobserved Task Exception");
             e.SetObserved();
         };
     }
@@ -322,7 +339,6 @@ file static class Program
         {
             // This captures failures during the actual Dokan mounting process
             DebugLogger.WriteLine($"Mount process failed: {ex.Message}");
-            await ErrorLogger.LogErrorAsync(ex, $"Failed to maintain mount for {isoPath} on {mountPath}");
             throw; // Re-throw so Main can handle the UI/Console feedback
         }
         finally

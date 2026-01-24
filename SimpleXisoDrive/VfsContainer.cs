@@ -7,9 +7,7 @@ public class VfsContainer : IDisposable
 {
     private readonly IsoSt _isoSt;
     private readonly Dictionary<string, FileEntry> _entryCache = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, List<string>> _childrenCache = new(StringComparer.OrdinalIgnoreCase);
-
-    private const int MaxCachedEntries = 2000;
+    private readonly Dictionary<string, List<FileEntry>> _childrenCache = new(StringComparer.OrdinalIgnoreCase);
 
     public ulong VolumeSize { get; private set; }
     public DateTime VolumeCreationTime { get; private set; }
@@ -41,8 +39,6 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             _isoSt.Dispose();
-            // Log specifically that the ISO parsing failed
-            _ = ErrorLogger.LogErrorAsync(ex, $"VfsContainer failed to initialize for ISO: {isoPath}");
             // Exception is re-thrown and caught by Program.cs, which handles the API reporting.
             throw new InvalidImageException($"Failed to read Xbox ISO: {ex.Message}", ex);
         }
@@ -50,22 +46,7 @@ public class VfsContainer : IDisposable
 
     private void CacheEntry(string path, FileEntry entry)
     {
-        if (_entryCache.Count >= MaxCachedEntries)
-        {
-            var oldestPath = _entryCache.Keys.FirstOrDefault();
-            if (oldestPath != null)
-            {
-                _entryCache.Remove(oldestPath);
-                _childrenCache.Remove(oldestPath);
-            }
-        }
-
         _entryCache[path] = entry;
-
-        if (entry.IsDirectory && !_childrenCache.ContainsKey(path))
-        {
-            _childrenCache[path] = new List<string>();
-        }
     }
 
     public FileEntry? GetEntry(string path)
@@ -124,85 +105,44 @@ public class VfsContainer : IDisposable
         var normalizedPath = path.Replace('/', '\\').TrimEnd('\\');
         DebugLogger.WriteLine($"[GetFolderList] Starting for path: '{normalizedPath}'");
 
-        if (normalizedPath == "\\")
+        if (string.IsNullOrEmpty(normalizedPath))
         {
-            if (!_entryCache.TryGetValue("\\", out var rootEntry) || !rootEntry.IsDirectory)
-            {
-                DebugLogger.WriteLine("[ERROR] Root entry not found or not a directory");
-                yield break;
-            }
+            normalizedPath = "\\";
+        }
 
-            if (_childrenCache.TryGetValue(normalizedPath, out var cachedChildren) && cachedChildren.Count > 0)
-            {
-                DebugLogger.WriteLine($"[GetFolderList] Using cached children ({cachedChildren.Count} entries)");
-                foreach (var childPath in cachedChildren)
-                {
-                    if (_entryCache.TryGetValue(childPath, out var childEntry))
-                    {
-                        yield return childEntry;
-                    }
-                }
+        // Check if we have the directory listing cached
+        if (_childrenCache.TryGetValue(normalizedPath, out var cachedChildren))
+        {
+            DebugLogger.WriteLine($"[GetFolderList] Using cached children for '{normalizedPath}' ({cachedChildren.Count} entries)");
+            foreach (var entry in cachedChildren) yield return entry;
 
-                yield break;
-            }
-
-            // Traverse the binary tree to get all entries
-            var children = new List<string>();
-            var entries = GetAllEntriesFromBinaryTree(rootEntry);
-
-            foreach (var entry in entries)
-            {
-                if (string.IsNullOrEmpty(entry.FileName))
-                    continue;
-
-                var childPath = Path.Combine(normalizedPath, entry.FileName);
-                CacheEntry(childPath, entry);
-                children.Add(childPath);
-
-                DebugLogger.WriteLine($"[GetFolderList] Yielding entry: '{entry.FileName}'");
-                yield return entry;
-            }
-
-            _childrenCache[normalizedPath] = children;
-            DebugLogger.WriteLine($"[GetFolderList] Cached {children.Count} children for root");
             yield break;
         }
 
-        // Handle non-root directories similarly
-        var dirEntry = GetEntry(normalizedPath);
+        // Get the directory entry itself
+        var dirEntry = normalizedPath == "\\" ? _entryCache.GetValueOrDefault("\\") : GetEntry(normalizedPath);
         if (dirEntry is not { IsDirectory: true })
         {
+            DebugLogger.WriteLine($"[ERROR] Directory not found or invalid: '{normalizedPath}'");
             yield break;
         }
 
-        if (_childrenCache.TryGetValue(normalizedPath, out var cachedChildrenNonRoot) && cachedChildrenNonRoot.Count > 0)
+        // Traverse the binary tree to get all children
+        var children = new List<FileEntry>();
+        var entries = GetAllEntriesFromBinaryTree(dirEntry);
+
+        foreach (var entry in entries)
         {
-            foreach (var childPath in cachedChildrenNonRoot)
-            {
-                if (_entryCache.TryGetValue(childPath, out var childEntry))
-                {
-                    yield return childEntry;
-                }
-            }
-
-            yield break;
-        }
-
-        var childrenNonRoot = new List<string>();
-        var entriesNonRoot = GetAllEntriesFromBinaryTree(dirEntry);
-
-        foreach (var entry in entriesNonRoot)
-        {
-            if (string.IsNullOrEmpty(entry.FileName))
-                continue;
+            if (string.IsNullOrEmpty(entry.FileName)) continue;
 
             var childPath = Path.Combine(normalizedPath, entry.FileName);
             CacheEntry(childPath, entry);
-            childrenNonRoot.Add(childPath);
+            children.Add(entry);
             yield return entry;
         }
 
-        _childrenCache[normalizedPath] = childrenNonRoot;
+        _childrenCache[normalizedPath] = children;
+        DebugLogger.WriteLine($"[GetFolderList] Cached {children.Count} children for '{normalizedPath}'");
     }
 
     private List<FileEntry> GetAllEntriesFromBinaryTree(FileEntry directoryEntry)

@@ -49,7 +49,17 @@ public class IsoSt : IDisposable
                 }
 
                 _fileStream.Seek(fileOffset, SeekOrigin.Begin);
-                return _fileStream.Read(buffer);
+
+                var totalRead = 0;
+                while (totalRead < buffer.Length)
+                {
+                    var n = _fileStream.Read(buffer[totalRead..]);
+                    if (n == 0) break; // End of stream reached
+
+                    totalRead += n;
+                }
+
+                return totalRead;
             }
             catch (Exception ex)
             {
@@ -94,18 +104,6 @@ public class IsoSt : IDisposable
         }
     }
 
-
-    /// <summary>
-    /// Executes an action with the BinaryReader under the stream lock.
-    /// Useful for reading structures that require multiple sequential reads after a single seek.
-    /// </summary>
-    public T ExecuteLocked<T>(Func<BinaryReader, T> action)
-    {
-        lock (LockObject)
-        {
-            return action(Reader);
-        }
-    }
 
     /// <summary>
     /// Executes an action with the BinaryReader under the stream lock.
