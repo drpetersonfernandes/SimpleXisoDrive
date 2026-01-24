@@ -281,35 +281,57 @@ public class VfsContainer : IDisposable
         return null;
     }
 
-    private FileEntry? SearchBinaryTree(FileEntry? entry, Func<FileEntry, bool> predicate)
+    private FileEntry? SearchBinaryTree(FileEntry? startNode, Func<FileEntry, bool> predicate)
     {
-        if (entry == null) return null;
+        if (startNode == null) return null;
 
-        // Check current entry
-        if (!string.IsNullOrEmpty(entry.FileName) && predicate(entry))
-        {
-            return entry;
-        }
+        var stack = new Stack<FileEntry>();
+        stack.Push(startNode);
 
-        // Search left subtree
-        if (entry.HasLeftChild)
+        // Track visited nodes to prevent infinite loops (Cycle Detection)
+        // Key is (Sector, Offset)
+        var visited = new HashSet<(long, long)>();
+
+        while (stack.Count > 0)
         {
-            var leftChild = entry.GetLeftChild(_isoSt);
-            if (leftChild != null)
+            var current = stack.Pop();
+
+            // If we have already visited this node, skip it to prevent cycles
+            if (!visited.Add((current.EntrySector, current.EntryOffset)))
             {
-                var leftResult = SearchBinaryTree(leftChild, predicate);
-                if (leftResult != null) return leftResult;
+                continue;
+            }
+
+            // Check if this is the entry we are looking for
+            if (!string.IsNullOrEmpty(current.FileName) && predicate(current))
+            {
+                return current;
+            }
+
+            // Push children to the stack.
+            // To mimic the recursive order (Check -> Left -> Right),
+            // we push Right first, then Left, so Left is popped next.
+
+            if (current.HasRightChild)
+            {
+                var rightChild = current.GetRightChild(_isoSt);
+                if (rightChild != null)
+                {
+                    stack.Push(rightChild);
+                }
+            }
+
+            if (current.HasLeftChild)
+            {
+                var leftChild = current.GetLeftChild(_isoSt);
+                if (leftChild != null)
+                {
+                    stack.Push(leftChild);
+                }
             }
         }
 
-        // Search right subtree
-        if (!entry.HasRightChild) return null;
-
-        var rightChild = entry.GetRightChild(_isoSt);
-        if (rightChild == null) return null;
-
-        var rightResult = SearchBinaryTree(rightChild, predicate);
-        return rightResult;
+        return null;
     }
 
     public int ReadFile(FileEntry entry, Span<byte> buffer, long offset)
