@@ -1,4 +1,5 @@
-﻿using SimpleXisoDrive.XDVDFs;
+using SimpleXisoDrive.Services;
+using SimpleXisoDrive.XDVDFs;
 
 namespace SimpleXisoDrive;
 
@@ -111,6 +112,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error in FindEntryInDirectory: {ex.Message}");
+            _ = ErrorLogger.LogErrorAsync(ex, $"Error in FindEntryInDirectory for target '{targetName}'");
             return null;
         }
     }
@@ -217,7 +219,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error traversing binary tree: {ex.Message}");
-            // Log or handle the error as in the C++ version
+            _ = ErrorLogger.LogErrorAsync(ex, "Error traversing binary tree in GetAllEntriesFromBinaryTree");
         }
 
         return entries;
@@ -273,6 +275,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error in binary tree traversal: {ex.Message}");
+            _ = ErrorLogger.LogErrorAsync(ex, "Error in binary tree traversal (TraverseBinaryTree)");
         }
 
         return null;

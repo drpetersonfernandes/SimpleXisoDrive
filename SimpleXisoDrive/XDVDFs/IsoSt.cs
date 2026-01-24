@@ -1,3 +1,5 @@
+using SimpleXisoDrive.Services;
+
 namespace SimpleXisoDrive.XDVDFs;
 
 /// <inheritdoc />
@@ -76,6 +78,7 @@ public class IsoSt : IDisposable
             catch (Exception ex)
             {
                 DebugLogger.WriteLine($"Failed to read FileEntry at sector {sector}, offset {offset}: {ex.Message}");
+                _ = ErrorLogger.LogErrorAsync(ex, $"Failed to read FileEntry at sector {sector}, offset {offset}");
                 return null;
             }
         }

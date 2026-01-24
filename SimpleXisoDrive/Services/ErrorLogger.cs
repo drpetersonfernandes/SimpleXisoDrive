@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
-namespace SimpleXisoDrive;
+namespace SimpleXisoDrive.Services;
 
 public static class ErrorLogger
 {
@@ -27,11 +27,9 @@ public static class ErrorLogger
             Timeout = TimeSpan.FromSeconds(30)
         };
 
-        // API logging is configured only if the key and URL are not the default placeholders.
+        // API logging is configured if the key and URL are present.
         IsApiLoggingConfigured = !string.IsNullOrWhiteSpace(ApiKey) &&
-                                 !ApiKey.Equals("hjh7yu6t56tyr540o9u8767676r5674534453235264c75b6t7ggghgg76trf564e", StringComparison.OrdinalIgnoreCase) &&
-                                 !string.IsNullOrWhiteSpace(BugReportApiUrl) &&
-                                 !BugReportApiUrl.Equals("https://www.purelogiccode.com/bugreport/api/send-bug-report", StringComparison.OrdinalIgnoreCase);
+                                 !string.IsNullOrWhiteSpace(BugReportApiUrl);
     }
 
     private static string FormatErrorMessage(Exception ex, string contextMessage)
@@ -69,7 +67,7 @@ public static class ErrorLogger
     {
         if (ex == null)
         {
-            ex = new Exception("ErrorLogger.LogErrorAsync was called with a null exception object.");
+            ex = new ArgumentNullException(nameof(ex), "ErrorLogger.LogErrorAsync was called with a null exception object.");
             try
             {
                 throw ex;
@@ -102,7 +100,7 @@ public static class ErrorLogger
 
         if (IsApiLoggingConfigured)
         {
-            var sent = await SendLogToApiAsync(logContent);
+            var sent = await SendLogToApiAsync(ex, contextMessage);
             if (sent)
             {
                 DebugLogger.WriteLine("Error details were also sent to the remote logging service.");
@@ -114,13 +112,26 @@ public static class ErrorLogger
         }
     }
 
-    private static async Task<bool> SendLogToApiAsync(string logContent)
+    private static async Task<bool> SendLogToApiAsync(Exception ex, string contextMessage)
     {
         if (!IsApiLoggingConfigured) return false;
 
         try
         {
-            var payload = new { message = logContent, applicationName = ApplicationName };
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
+            var osDescription = RuntimeInformation.OSDescription;
+            var frameworkDescription = RuntimeInformation.FrameworkDescription;
+
+            var payload = new
+            {
+                message = $"Context: {contextMessage}\nException: {ex.Message}",
+                applicationName = ApplicationName,
+                version,
+                userInfo = Environment.UserName,
+                environment = $"{osDescription} ({RuntimeInformation.OSArchitecture}) - {frameworkDescription}",
+                stackTrace = ex.ToString()
+            };
+
             var jsonPayload = JsonSerializer.Serialize(payload);
             var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 

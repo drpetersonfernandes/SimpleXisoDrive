@@ -4,16 +4,44 @@ public static class DebugLogger
 {
     private static readonly string DebugFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.txt");
     private static readonly Lock LockObject = new();
+    private static bool _fileLoggingEnabled;
 
     public static void WriteLine(string message)
     {
-        // Write to the console
-        Console.WriteLine(message);
-        // Write to file
+        // Always write to console first
+        try
+        {
+            Console.WriteLine(message);
+        }
+        catch
+        {
+            // If console is unavailable, we can't do much
+        }
+
+        // Write to file only if logging is enabled
+        if (!_fileLoggingEnabled)
+            return;
+
         lock (LockObject)
         {
-            File.AppendAllText(DebugFilePath,
-                $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} - {message}{Environment.NewLine}");
+            try
+            {
+                File.AppendAllText(DebugFilePath,
+                    $"{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} - {message}{Environment.NewLine}");
+            }
+            catch (Exception ex)
+            {
+                // Disable file logging if it fails to prevent repeated exceptions
+                _fileLoggingEnabled = false;
+                try
+                {
+                    Console.Error.WriteLine($"[Warning] Debug logging to file disabled: {ex.Message}");
+                }
+                catch
+                {
+                    // Console might also be unavailable
+                }
+            }
         }
     }
 }

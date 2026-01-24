@@ -1,6 +1,7 @@
 ﻿using System.Security.AccessControl;
 using DokanNet;
 using DokanNet.Logging;
+using SimpleXisoDrive.Services;
 using SimpleXisoDrive.XDVDFs;
 using FileAccess = DokanNet.FileAccess;
 

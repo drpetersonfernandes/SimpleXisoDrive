@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using DokanNet;
 using DokanNet.Logging;
+using SimpleXisoDrive.Services;
 
 namespace SimpleXisoDrive;
 
@@ -11,10 +12,23 @@ file static class Program
 
     public static async Task<int> Main(string[] args)
     {
+        DebugLogger.WriteLine("=== SimpleXisoDrive Started ===");
+        DebugLogger.WriteLine($"Arguments: {string.Join(" | ", args)}");
+        DebugLogger.WriteLine($"Working Directory: {Environment.CurrentDirectory}");
+
+        IsDokanInstalled();
+
         // Clear previous debug log
-        if (File.Exists("debug.txt"))
+        try
         {
-            File.Delete("debug.txt");
+            if (File.Exists("debug.txt"))
+            {
+                File.Delete("debug.txt");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Warning: Could not clear debug log: {ex.Message}");
         }
 
         var isDragAndDrop = false;
@@ -30,6 +44,8 @@ file static class Program
                 case 0:
                     PrintUsage();
                     DebugLogger.WriteLine("\nAlternatively, you can drag and drop an ISO file onto the executable to mount it automatically.");
+                    DebugLogger.WriteLine("\nPress any key to exit.");
+                    Console.ReadKey();
                     return 1;
 
                 case 1:
@@ -126,34 +142,86 @@ file static class Program
 
             return 1;
         }
-        catch (Exception ex)
+        catch (Exception ex) // Catch all exceptions
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            await Console.Error.WriteLineAsync($"An unexpected error occurred: {ex.Message}");
+            await Console.Error.WriteLineAsync($"Error: {ex.Message}");
             Console.ResetColor();
-            await ErrorLogger.LogErrorAsync(ex, "An unexpected error occurred in the main application thread.");
-            if (!isDragAndDrop) return 1;
 
-            DebugLogger.WriteLine("\nPress any key to exit.");
-            Console.ReadKey();
+            await ErrorLogger.LogErrorAsync(ex, "Fatal error in Main");
+
+            // Always wait for key press if drag-and-drop
+            if (isDragAndDrop || args.Length == 1)
+            {
+                DebugLogger.WriteLine("\nPress any key to exit.");
+                Console.ReadKey();
+            }
+
             return 1;
         }
-        // The finally block is no longer needed as the logic is handled explicitly above.
+    }
+
+    private static void IsDokanInstalled()
+    {
+        try
+        {
+            // Try to load the Dokan driver DLL
+            var dokanDllPath = Path.Combine(
+                Environment.SystemDirectory,
+                "drivers",
+                "dokan2.sys");
+
+            File.Exists(dokanDllPath);
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     private static string? FindAvailableDriveLetter()
     {
-        char[] preferredLetters = ['M', 'N', 'O', 'P', 'Q', 'R'];
-        foreach (var letter in preferredLetters)
+        try
         {
-            var drivePath = $"{letter}:\\";
-            if (!Directory.Exists(drivePath))
-            {
-                return drivePath;
-            }
-        }
+            // Get all existing drive letters
+            var usedLetters = DriveInfo.GetDrives()
+                .Select(static d => d.Name[0])
+                .ToHashSet();
 
-        return null;
+            char[] preferredLetters = ['M', 'N', 'O', 'P', 'Q', 'R'];
+
+            foreach (var letter in preferredLetters)
+            {
+                if (!usedLetters.Contains(letter))
+                {
+                    var drivePath = $"{letter}:\\";
+                    DebugLogger.WriteLine($"Found available drive letter: {drivePath}");
+                    return drivePath;
+                }
+            }
+
+            DebugLogger.WriteLine("No available drive letters found in preferred range M-R");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            DebugLogger.WriteLine($"Error checking drive letters: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static bool IsAdministrator()
+    {
+        try
+        {
+            using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var principal = new System.Security.Principal.WindowsPrincipal(identity);
+            return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static void PrintUsage()
@@ -177,6 +245,16 @@ file static class Program
 
     private static async Task RunMount(string isoPath, string mountPath, bool debug, bool launch)
     {
+        // Check for admin rights for drive letter mounting
+        if (mountPath.EndsWith(":\\", StringComparison.Ordinal) && !IsAdministrator())
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("WARNING: Administrator privileges are recommended for mounting drive letters.");
+            Console.WriteLine("If mounting fails, try running as Administrator.");
+            Console.ResetColor();
+            DebugLogger.WriteLine("Running without administrator privileges");
+        }
+
         Console.CancelKeyPress += static (_, e) =>
         {
             e.Cancel = true;
@@ -222,7 +300,6 @@ file static class Program
             }
 
             var tcs = new TaskCompletionSource();
-            // CancellationTokenRegistration is IDisposable, not IAsyncDisposable, so 'using' is correct.
             await using (CancellationTokenSource.Token.Register(() => tcs.SetResult()))
             {
                 await tcs.Task;
