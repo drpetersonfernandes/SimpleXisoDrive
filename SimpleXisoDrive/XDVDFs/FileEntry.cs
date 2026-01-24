@@ -69,10 +69,6 @@ public class FileEntry
             var nameLength = reader.ReadByte(); // 1 byte
 
             // Validate nameLength
-            if (nameLength > 255)
-            {
-                throw new InvalidDataException($"Invalid name length: {nameLength} at sector {sector}, offset {offset}");
-            }
 
             // Read the filename
             byte[] nameBytes;
@@ -110,7 +106,7 @@ public class FileEntry
             EntrySize = 14 + nameLength; // Fixed header (14 bytes) + variable filename length
 
             // Add padding to align to 4-byte boundary (XDVDFS requirement)
-            var padding = (4 - (EntrySize % 4)) % 4;
+            var padding = (4 - EntrySize % 4) % 4;
             EntrySize += padding;
 
             // Skip the padding bytes

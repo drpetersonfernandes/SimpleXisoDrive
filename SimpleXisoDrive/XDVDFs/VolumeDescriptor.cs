@@ -3,7 +3,7 @@ namespace SimpleXisoDrive.XDVDFs;
 public class VolumeDescriptor
 {
     // Add this property to track the source sector
-    public uint Sector { get; private set; }
+    public uint Sector { get; }
 
     private const int VolumeDescriptorSector = 32;
 
@@ -15,7 +15,6 @@ public class VolumeDescriptor
 
     private byte[] Id1 { get; set; } = new byte[0x14];
     public uint RootDirTableSector { get; private set; } // Make public for VfsContainer
-    public uint RootDirTableSize { get; private set; }
     public DateTime CreationTime { get; private set; }
     private byte[] Id2 { get; set; } = new byte[0x14];
 
@@ -49,7 +48,7 @@ public class VolumeDescriptor
 
             // Read metadata
             RootDirTableSector = reader.ReadUInt32();
-            RootDirTableSize = reader.ReadUInt32();
+            reader.ReadUInt32();
             var fileTime = reader.ReadInt64();
             CreationTime = DateTime.FromFileTime(fileTime);
 

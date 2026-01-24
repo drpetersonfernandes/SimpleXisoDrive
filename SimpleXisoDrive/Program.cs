@@ -177,7 +177,7 @@ file static class Program
 
     private static async Task RunMount(string isoPath, string mountPath, bool debug, bool launch)
     {
-        Console.CancelKeyPress += (sender, e) =>
+        Console.CancelKeyPress += static (_, e) =>
         {
             e.Cancel = true;
             DebugLogger.WriteLine("Ctrl+C detected. Unmounting...");

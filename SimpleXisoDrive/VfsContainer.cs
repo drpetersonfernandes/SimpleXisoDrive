@@ -278,7 +278,7 @@ public class VfsContainer : IDisposable
         return null;
     }
 
-    private FileEntry? SearchBinaryTree(FileEntry entry, Func<FileEntry, bool> predicate)
+    private FileEntry? SearchBinaryTree(FileEntry? entry, Func<FileEntry, bool> predicate)
     {
         if (entry == null) return null;
 
@@ -306,9 +306,7 @@ public class VfsContainer : IDisposable
         if (rightChild == null) return null;
 
         var rightResult = SearchBinaryTree(rightChild, predicate);
-        if (rightResult != null) return rightResult;
-
-        return null;
+        return rightResult;
     }
 
     public int ReadFile(FileEntry entry, Span<byte> buffer, long offset)

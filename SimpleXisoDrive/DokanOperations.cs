@@ -14,7 +14,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
     public NtStatus CreateFile(string fileName, FileAccess access, FileShare share,
         FileMode mode, FileOptions options, FileAttributes attributes, IDokanFileInfo info)
     {
-        LogOperation("CreateFile", fileName, info);
+        LogOperation();
 
         var normalizedPath = fileName.Replace('/', '\\');
 
@@ -97,36 +97,23 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
             return DokanResult.AccessDenied;
         }
 
-        // For FileMode.CreateNew, if the file already exists, return AlreadyExists.
-        if (mode == FileMode.CreateNew)
+        return mode switch
         {
-            return DokanResult.AlreadyExists;
-        }
-
-        // For FileMode.Create or FileMode.Truncate, if the file exists, deny access (read-only).
-        if (mode is FileMode.Create or FileMode.Truncate)
-        {
-            return DokanResult.AccessDenied;
-        }
-
-        // For FileMode.Open, if the file is a directory, deny opening it as a file.
-        if (mode == FileMode.Open && entry.IsDirectory && !info.IsDirectory)
-        {
-            return DokanResult.PathNotFound; // Or DokanResult.AccessDenied depending on desired behavior
-        }
-
-        // For FileMode.Open, if the file is a file, deny opening it as a directory.
-        if (mode == FileMode.Open && !entry.IsDirectory && info.IsDirectory)
-        {
-            return DokanResult.NotADirectory;
-        }
-
+            // For FileMode.CreateNew, if the file already exists, return AlreadyExists.
+            FileMode.CreateNew => DokanResult.AlreadyExists,
+            // For FileMode.Create or FileMode.Truncate, if the file exists, deny access (read-only).
+            FileMode.Create or FileMode.Truncate => DokanResult.AccessDenied,
+            // For FileMode.Open, if the file is a directory, deny opening it as a file.
+            FileMode.Open when entry.IsDirectory && !info.IsDirectory => DokanResult.PathNotFound,
+            // For FileMode.Open, if the file is a file, deny opening it as a directory.
+            FileMode.Open when !entry.IsDirectory && info.IsDirectory => DokanResult.NotADirectory,
+            _ => DokanResult.Success
+        };
 
         // If we reach here, the operation is likely a read/query on an existing entry, which is allowed.
-        return DokanResult.Success;
     }
 
-    private static void LogOperation(string operation, string fileName, IDokanFileInfo info)
+    private static void LogOperation()
     {
         // Only log debug messages if debug mode is enabled in Program.cs
         // This prevents excessive logging during normal operation
@@ -159,19 +146,13 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
 
             // After fetching, cache it in the context for subsequent operations if it's a valid file entry.
             // We only cache valid file entries, not directories, for ReadFile context.
-            if (entry != null && !entry.IsDirectory)
+            if (!entry.IsDirectory)
             {
                 info.Context = entry;
             }
         }
 
         // Now, validate the entry we have (either from context or fetched).
-        if (entry == null)
-        {
-            // It wasn't in the context and couldn't be found.
-            Logger.Error($"ReadFile called for missing entry: {fileName}");
-            return DokanResult.FileNotFound;
-        }
 
         if (entry.IsDirectory)
         {
@@ -215,7 +196,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
 
     public NtStatus GetFileInformation(string fileName, out FileInformation fileInfo, IDokanFileInfo info)
     {
-        LogOperation("GetFileInformation", fileName, info);
+        LogOperation();
 
         var normalizedPath = fileName.Replace('/', '\\');
 
@@ -299,7 +280,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
 
     public NtStatus FindFiles(string fileName, out IList<FileInformation> files, IDokanFileInfo info)
     {
-        LogOperation("FindFiles", fileName, info);
+        LogOperation();
 
         files = new List<FileInformation>();
         var normalizedPath = fileName.Replace('/', '\\');
@@ -312,7 +293,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
             // Note: Dokan usually calls CreateFile first, so this might indicate a logic error
             // or a race condition if the entry was valid in CreateFile but not here.
             // For robustness, check if it's a file not a directory.
-            if (dirEntry != null && !dirEntry.IsDirectory)
+            if (dirEntry is { IsDirectory: false })
             {
                 Logger.Error($"FindFiles called on a file: {fileName}");
                 return DokanResult.NotADirectory;
@@ -492,7 +473,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
         // For simplicity, we can just call FindFiles and filter the results by pattern
         // Or, return NotImplemented if filtering isn't strictly needed for basic browsing
         // Let's implement basic filtering for better compatibility
-        LogOperation("FindFilesWithPattern", fileName, info);
+        LogOperation();
         files = new List<FileInformation>();
 
         // Get all files for the directory first
@@ -554,13 +535,14 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
             const InheritanceFlags inheritanceFlags = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
             const PropagationFlags propagationFlags = PropagationFlags.None; // Or NoPropagateInherit for directories?
 
-            if (security is DirectorySecurity ds)
+            switch (security)
             {
-                ds.AddAccessRule(new FileSystemAccessRule(everyone, readRights | FileSystemRights.ListDirectory, inheritanceFlags, propagationFlags, AccessControlType.Allow));
-            }
-            else if (security is FileSecurity fs)
-            {
-                fs.AddAccessRule(new FileSystemAccessRule(everyone, readRights, AccessControlType.Allow));
+                case DirectorySecurity ds:
+                    ds.AddAccessRule(new FileSystemAccessRule(everyone, readRights | FileSystemRights.ListDirectory, inheritanceFlags, propagationFlags, AccessControlType.Allow));
+                    break;
+                case FileSecurity fs:
+                    fs.AddAccessRule(new FileSystemAccessRule(everyone, readRights, AccessControlType.Allow));
+                    break;
             }
         }
         catch (Exception ex)
