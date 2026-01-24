@@ -241,15 +241,35 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
         fileSystemName = "XDVDFS";
         maximumComponentLength = 255;
         features = FileSystemFeatures.ReadOnlyVolume | FileSystemFeatures.CasePreservedNames | FileSystemFeatures.UnicodeOnDisk;
-        return DokanResult.Success;
+
+        try
+        {
+            return DokanResult.Success;
+        }
+        catch (Exception ex)
+        {
+            _ = ErrorLogger.LogErrorAsync(ex, "GetVolumeInformation failed");
+            return DokanResult.Error;
+        }
     }
 
     public NtStatus GetDiskFreeSpace(out long freeBytesAvailable, out long totalNumberOfBytes, out long totalNumberOfFreeBytes, IDokanFileInfo info)
     {
-        totalNumberOfBytes = (long)_vfs.VolumeSize;
-        freeBytesAvailable = 0;
-        totalNumberOfFreeBytes = 0;
-        return DokanResult.Success;
+        try
+        {
+            totalNumberOfBytes = (long)_vfs.VolumeSize;
+            freeBytesAvailable = 0;
+            totalNumberOfFreeBytes = 0;
+            return DokanResult.Success;
+        }
+        catch (Exception ex)
+        {
+            freeBytesAvailable = 0;
+            totalNumberOfBytes = 0;
+            totalNumberOfFreeBytes = 0;
+            _ = ErrorLogger.LogErrorAsync(ex, "GetDiskFreeSpace failed");
+            return DokanResult.Error;
+        }
     }
 
     // Boilerplate / Read-Only Enforcement

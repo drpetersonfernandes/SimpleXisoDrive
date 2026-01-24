@@ -338,7 +338,15 @@ public class VfsContainer : IDisposable
 
     public int ReadFile(FileEntry entry, Span<byte> buffer, long offset)
     {
-        return _isoSt.Read(entry, buffer, offset);
+        try
+        {
+            return _isoSt.Read(entry, buffer, offset);
+        }
+        catch (Exception ex)
+        {
+            _ = ErrorLogger.LogErrorAsync(ex, $"VfsContainer.ReadFile failed for {entry.FileName}");
+            return 0;
+        }
     }
 
     public void Dispose()

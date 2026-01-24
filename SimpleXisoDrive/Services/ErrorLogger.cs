@@ -8,7 +8,6 @@ namespace SimpleXisoDrive.Services;
 
 public static class ErrorLogger
 {
-    // To enable remote bug reporting, replace these placeholders with your actual API key and URL.
     private const string ApiKey = "hjh7yu6t56tyr540o9u8767676r5674534453235264c75b6t7ggghgg76trf564e";
     private const string BugReportApiUrl = "https://www.purelogiccode.com/bugreport/api/send-bug-report";
 

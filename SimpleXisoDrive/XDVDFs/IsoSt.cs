@@ -37,17 +37,27 @@ public class IsoSt : IDisposable
     {
         lock (LockObject)
         {
-            // Apply VolumeOffset to the calculation
-            var fileOffset = VolumeOffset + (long)entry.StartSector * FileEntry.SectorSize + offset;
-
-            // Ensure we don't seek past the end of the stream
-            if (fileOffset >= _fileStream.Length)
+            try
             {
+                // Apply VolumeOffset to the calculation
+                var fileOffset = VolumeOffset + (long)entry.StartSector * FileEntry.SectorSize + offset;
+
+                // Ensure we don't seek past the end of the stream
+                if (fileOffset >= _fileStream.Length)
+                {
+                    return 0;
+                }
+
+                _fileStream.Seek(fileOffset, SeekOrigin.Begin);
+                return _fileStream.Read(buffer);
+            }
+            catch (Exception ex)
+            {
+                DebugLogger.WriteLine($"Read error at sector {entry.StartSector}, offset {offset}: {ex.Message}");
+                // Forward bug to API
+                _ = ErrorLogger.LogErrorAsync(ex, $"Physical Read Failure: Sector {entry.StartSector}, Offset {offset}, File: {entry.FileName}");
                 return 0;
             }
-
-            _fileStream.Seek(fileOffset, SeekOrigin.Begin);
-            return _fileStream.Read(buffer);
         }
     }
 

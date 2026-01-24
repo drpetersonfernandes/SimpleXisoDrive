@@ -21,6 +21,9 @@ file static class Program
 
         IsDokanInstalled();
 
+        // Check for updates asynchronously
+        _ = UpdateChecker.CheckForUpdateAsync();
+
         // Clear previous debug log
         try
         {
