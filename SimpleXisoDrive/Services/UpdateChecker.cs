@@ -26,7 +26,7 @@ public static partial class UpdateChecker
 
         Http = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(15)
+            Timeout = TimeSpan.FromSeconds(5)
         };
     }
 
