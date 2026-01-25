@@ -3,9 +3,8 @@ using System.Reflection;
 using System.Security.Authentication;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using SimpleXisoDrive.Services;
 
-namespace SimpleXisoDrive;
+namespace SimpleXisoDrive.Services;
 
 public static partial class UpdateChecker
 {
