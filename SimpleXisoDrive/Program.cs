@@ -299,7 +299,14 @@ file static class Program
             DebugLogger.WriteLine($"Attempting to mount '{isoPath}' to '{mountPath}'...");
             _vfsContainer = new VfsContainer(isoPath);
 
-            var dokanOptions = DokanOptions.WriteProtection | DokanOptions.MountManager | DokanOptions.CurrentSession;
+            // Use MountManager only if we have Admin rights, otherwise it often fails with "Something's wrong with the Dokan driver"
+            var dokanOptions = DokanOptions.WriteProtection | DokanOptions.CurrentSession;
+
+            if (CheckAccess.IsAdministrator())
+            {
+                dokanOptions |= DokanOptions.MountManager;
+            }
+
             if (debug)
             {
                 dokanOptions |= DokanOptions.DebugMode | DokanOptions.StderrOutput;
