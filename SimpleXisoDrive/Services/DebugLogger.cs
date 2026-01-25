@@ -1,4 +1,4 @@
-﻿namespace SimpleXisoDrive;
+﻿namespace SimpleXisoDrive.Services;
 
 public static class DebugLogger
 {

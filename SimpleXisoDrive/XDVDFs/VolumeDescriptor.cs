@@ -1,3 +1,5 @@
+using SimpleXisoDrive.Services;
+
 namespace SimpleXisoDrive.XDVDFs;
 
 public class VolumeDescriptor
