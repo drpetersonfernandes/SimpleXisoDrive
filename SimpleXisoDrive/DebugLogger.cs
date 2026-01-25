@@ -8,17 +8,16 @@ public static class DebugLogger
 
     public static void WriteLine(string message)
     {
-        // Always write to console first
         try
         {
             Console.WriteLine(message);
         }
         catch
         {
-            // If console is unavailable, we can't do much
+            // If the console is unavailable, we can't do much
         }
 
-        // Write to file only if logging is enabled
+        // Write to the file only if logging is enabled
         if (!_fileLoggingEnabled)
             return;
 

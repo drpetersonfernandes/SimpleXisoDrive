@@ -1,33 +1,20 @@
 using System.Text;
+using SimpleXisoDrive.Models;
 
 namespace SimpleXisoDrive.XDVDFs;
-
-[Flags]
-public enum XisoFsFileAttributes : byte
-{
-    ReadOnly = 0x01,
-    Hidden = 0x02,
-    System = 0x04,
-    Directory = 0x10,
-    Archive = 0x20,
-    Normal = 0x80
-}
 
 public class FileEntry
 {
     public long EntrySector { get; internal set; }
     public const int SectorSize = 2048;
-
     public ushort LeftSubTree { get; internal set; }
     public ushort RightSubTree { get; internal set; }
     public uint StartSector { get; internal set; }
     public uint FileSize { get; internal set; }
     public XisoFsFileAttributes Attributes { get; internal set; }
     public string FileName { get; internal set; }
-
     public long EntryOffset { get; set; }
     public int EntrySize { get; internal set; } // Total size of this entry in bytes
-
     public bool IsDirectory => (Attributes & XisoFsFileAttributes.Directory) != 0;
     public bool HasLeftChild => LeftSubTree != 0xFFFF;
     public bool HasRightChild => RightSubTree != 0xFFFF;
@@ -68,8 +55,6 @@ public class FileEntry
             Attributes = (XisoFsFileAttributes)reader.ReadByte(); // 1 byte
             var nameLength = reader.ReadByte(); // 1 byte
 
-            // Validate nameLength
-
             // Read the filename
             byte[] nameBytes;
             if (nameLength > 0)
@@ -82,7 +67,7 @@ public class FileEntry
             }
             else
             {
-                nameBytes = Array.Empty<byte>();
+                nameBytes = [];
             }
 
             // Process filename - XDVDFS uses null-terminated ASCII strings
@@ -105,7 +90,7 @@ public class FileEntry
             // Calculate actual entry size
             EntrySize = 14 + nameLength; // Fixed header (14 bytes) + variable filename length
 
-            // Add padding to align to 4-byte boundary (XDVDFS requirement)
+            // Add padding to align to the 4-byte boundary (XDVDFS requirement)
             var padding = (4 - EntrySize % 4) % 4;
             EntrySize += padding;
 

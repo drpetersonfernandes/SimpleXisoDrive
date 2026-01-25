@@ -2,9 +2,7 @@ namespace SimpleXisoDrive.XDVDFs;
 
 public class VolumeDescriptor
 {
-    // Add this property to track the source sector
     public uint Sector { get; }
-
     private const int VolumeDescriptorSector = 32;
 
     // Offset used in xbox-iso-vfs for dual layer / game partitions
@@ -14,7 +12,7 @@ public class VolumeDescriptor
     private static readonly byte[] MagicId = "MICROSOFT*XBOX*MEDIA"u8.ToArray();
 
     private byte[] Id1 { get; set; } = new byte[0x14];
-    public uint RootDirTableSector { get; private set; } // Make public for VfsContainer
+    public uint RootDirTableSector { get; private set; }
     public DateTime CreationTime { get; private set; }
     private byte[] Id2 { get; set; } = new byte[0x14];
 
@@ -30,7 +28,7 @@ public class VolumeDescriptor
             // Calculate absolute position including the global offset (byteOffset)
             var sectorStart = byteOffset + (long)sector * IsoSt.SectorSize;
 
-            // First check if we can even read the full descriptor
+            // First, check if we can even read the full descriptor
             if (sectorStart + 0x800 > reader.BaseStream.Length)
             {
                 throw new EndOfStreamException("Not enough data for volume descriptor");
@@ -70,7 +68,7 @@ public class VolumeDescriptor
         });
     }
 
-    // Add this method to verify ISO format
+    // Add this method to verify the ISO format
     public bool IsRebuiltXisoFormat()
     {
         return Sector == 0;
@@ -153,7 +151,6 @@ public class VolumeDescriptor
             "This doesn't appear to be a valid Xbox ISO file."
         );
     }
-
 
     public bool Validate()
     {

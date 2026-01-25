@@ -14,8 +14,6 @@ public class IsoSt : IDisposable
     // Global offset for the volume (e.g. for dual-layer/hybrid discs)
     public long VolumeOffset { get; set; }
 
-    // Use a standard object for locking, compatible with C# 'lock' statement
-
     // Expose the lock object for operations that need to perform multiple reads under one lock
     public object LockObject { get; } = new();
 
@@ -64,7 +62,6 @@ public class IsoSt : IDisposable
             catch (Exception ex)
             {
                 DebugLogger.WriteLine($"Read error at sector {entry.StartSector}, offset {offset}: {ex.Message}");
-                // Forward bug to API
                 _ = ErrorLogger.LogErrorAsync(ex, $"Physical Read Failure: Sector {entry.StartSector}, Offset {offset}, File: {entry.FileName}");
                 return 0;
             }
@@ -92,7 +89,7 @@ public class IsoSt : IDisposable
                 var entry = new FileEntry();
                 entry.ReadInternal(Reader, sector, offset); // This reads one entry
 
-                // Now, for traversal, we need to return the entry, but ensure the next read knows the size
+                // Now, for traversal, we need to return the entry but ensure the next read knows the size
                 return entry;
             }
             catch (Exception ex)
@@ -103,7 +100,6 @@ public class IsoSt : IDisposable
             }
         }
     }
-
 
     /// <summary>
     /// Executes an action with the BinaryReader under the stream lock.
@@ -116,7 +112,6 @@ public class IsoSt : IDisposable
             action(Reader);
         }
     }
-
 
     public void Dispose()
     {

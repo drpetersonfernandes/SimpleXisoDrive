@@ -74,7 +74,7 @@ public static class ErrorLogger
             }
             catch
             {
-                /* ex now has a stack trace */
+                // ignore
             }
         }
 

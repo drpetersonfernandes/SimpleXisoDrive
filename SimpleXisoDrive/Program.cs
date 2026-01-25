@@ -97,7 +97,6 @@ file static class Program
                 return 1;
             }
 
-            // --- MODIFIED LOGIC ---
             if (isDragAndDrop)
             {
                 var mountTask = RunMount(isoPath, mountPath, debug, launch);
@@ -165,7 +164,7 @@ file static class Program
 
             return 1;
         }
-        catch (Exception ex) // Catch all exceptions
+        catch (Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
@@ -337,7 +336,6 @@ file static class Program
         }
         catch (Exception ex)
         {
-            // This captures failures during the actual Dokan mounting process
             DebugLogger.WriteLine($"Mount process failed: {ex.Message}");
             throw; // Re-throw so Main can handle the UI/Console feedback
         }

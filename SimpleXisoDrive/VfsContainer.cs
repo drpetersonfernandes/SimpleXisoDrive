@@ -8,7 +8,6 @@ public class VfsContainer : IDisposable
     private readonly IsoSt _isoSt;
     private readonly Dictionary<string, FileEntry> _entryCache = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<FileEntry>> _childrenCache = new(StringComparer.OrdinalIgnoreCase);
-
     public ulong VolumeSize { get; private set; }
     public DateTime VolumeCreationTime { get; private set; }
 
@@ -24,7 +23,6 @@ public class VfsContainer : IDisposable
                 throw new InvalidImageException("XDVDFS magic string not found.");
             }
 
-            // Log format type using new verification method
             DebugLogger.WriteLine(volumeDescriptor.IsRebuiltXisoFormat()
                 ? "Detected rebuilt XISO format (sector 0)"
                 : "Detected standard Xbox ISO format (sector 32)");
@@ -167,7 +165,6 @@ public class VfsContainer : IDisposable
         return entries;
     }
 
-
     private void TraverseBinaryTreeForAll(FileEntry firstEntry, List<FileEntry> results, HashSet<(long Sector, long Offset)> visited)
     {
         var stack = new Stack<FileEntry>();
@@ -199,7 +196,7 @@ public class VfsContainer : IDisposable
                 results.Add(current);
             }
 
-            // Move to right subtree
+            // Move to the right subtree
             current = current.HasRightChild ? current.GetRightChild(_isoSt) : null;
         }
     }
