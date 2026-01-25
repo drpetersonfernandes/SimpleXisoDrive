@@ -88,8 +88,13 @@ file static class Program
             if (!File.Exists(isoPath))
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                await Console.Error.WriteLineAsync($"Error: ISO file not found at '{isoPath}'");
+                var errorMsg = $"ISO file not found at '{isoPath}'";
+                await Console.Error.WriteLineAsync($"Error: {errorMsg}");
                 Console.ResetColor();
+
+                // Report this to the API so the developer knows the path was invalid
+                await ErrorLogger.LogErrorAsync(new FileNotFoundException(errorMsg), "Mount attempt failed: File not found.");
+
                 if (!isDragAndDrop) return 1;
 
                 DebugLogger.WriteLine("\nPress any key to exit.");
