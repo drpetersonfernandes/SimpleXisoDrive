@@ -297,6 +297,13 @@ file static class Program
         try
         {
             DebugLogger.WriteLine($"Attempting to mount '{isoPath}' to '{mountPath}'...");
+
+            // Dokan fails if a drive letter has a trailing backslash (e.g. "Z:\" fails, "Z:" works)
+            if (mountPath.Length == 3 && mountPath.EndsWith(":\\", StringComparison.Ordinal))
+            {
+                mountPath = mountPath.Substring(0, 2);
+            }
+
             _vfsContainer = new VfsContainer(isoPath);
 
             // Use MountManager only if we have Admin rights, otherwise it often fails with "Something's wrong with the Dokan driver"
