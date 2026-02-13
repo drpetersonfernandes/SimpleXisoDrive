@@ -148,7 +148,7 @@ public class VolumeDescriptor
         }
 
         // If we reach here, sectors were readable but failed validation
-        throw new VfsContainer.InvalidImageException(
+        throw new InvalidImageException(
             "Volume descriptor not found at sector 0 or 32 (including game partition offset). " +
             "This doesn't appear to be a valid Xbox ISO file."
         );

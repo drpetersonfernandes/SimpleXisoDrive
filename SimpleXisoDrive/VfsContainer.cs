@@ -37,7 +37,13 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             _isoSt.Dispose();
+
             // Exception is re-thrown and caught by Program.cs, which handles the API reporting.
+            if (ex is InvalidImageException)
+            {
+                throw;
+            }
+
             throw new InvalidImageException($"Failed to read Xbox ISO: {ex.Message}", ex);
         }
     }
@@ -290,13 +296,5 @@ public class VfsContainer : IDisposable
     {
         _isoSt.Dispose();
         GC.SuppressFinalize(this);
-    }
-
-    public class InvalidImageException : Exception
-    {
-        public InvalidImageException(string message, Exception? inner = null)
-            : base($"{message}. This might be an unsupported ISO format.", inner)
-        {
-        }
     }
 }

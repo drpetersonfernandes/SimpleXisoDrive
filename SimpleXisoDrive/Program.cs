@@ -89,6 +89,14 @@ file static class Program
                 Console.ForegroundColor = ConsoleColor.Red;
                 var errorMsg = $"ISO file not found at '{isoPath}'";
                 await Console.Error.WriteLineAsync($"Error: {errorMsg}");
+
+                // Add a hint for common command-line mistakes
+                if (args.Length > 2 && !isoPath.Contains(' '))
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    await Console.Error.WriteLineAsync("Hint: If your file path contains spaces, ensure it is wrapped in \"quotes\".");
+                }
+
                 Console.ResetColor();
 
                 // Report this to the API so the developer knows the path was invalid
@@ -143,7 +151,7 @@ file static class Program
 
             return 0;
         }
-        catch (VfsContainer.InvalidImageException ex)
+        catch (InvalidImageException ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
@@ -176,10 +184,10 @@ file static class Program
 
             await ErrorLogger.LogErrorAsync(ex, "Fatal error in Main");
 
-            // Always wait for key press if drag-and-drop
-            if (isDragAndDrop || args.Length == 1)
+            // If we are in a context where the window might disappear (Drag & Drop or single arg)
+            if (isDragAndDrop || args.Length <= 1)
             {
-                DebugLogger.WriteLine("\nPress any key to exit.");
+                Console.WriteLine("\nPress any key to exit.");
                 Console.ReadKey();
             }
 
