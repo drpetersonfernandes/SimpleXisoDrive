@@ -86,6 +86,8 @@ public class VolumeDescriptor
     public static VolumeDescriptor ReadFrom(IsoSt isoSt)
     {
         Exception? firstException = null;
+        var errors = new List<string>();
+        var fileSize = isoSt.Reader.BaseStream.Length;
 
         // 1. Try standard sector 32, Offset 0
         try
@@ -96,10 +98,14 @@ public class VolumeDescriptor
                 isoSt.VolumeOffset = 0;
                 return descriptor;
             }
+
+            errors.Add("Sector 32 (Offset 0): Found data but magic ID mismatch (not a valid XDVDFS signature)");
         }
         catch (Exception ex)
         {
             firstException = ex;
+            var errorDetail = ex is EndOfStreamException ? "file too small" : ex.Message;
+            errors.Add($"Sector 32 (Offset 0): {errorDetail}");
             DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset 0): {ex.Message}");
         }
 
@@ -114,9 +120,13 @@ public class VolumeDescriptor
                 DebugLogger.WriteLine($"Detected Game Partition at offset {GamePartitionOffset}");
                 return descriptor;
             }
+
+            errors.Add($"Sector 32 (Offset {GamePartitionOffset}): Found data but magic ID mismatch (not a valid game partition)");
         }
         catch (Exception ex)
         {
+            var errorDetail = ex is EndOfStreamException ? "file too small for game partition" : ex.Message;
+            errors.Add($"Sector 32 (Offset {GamePartitionOffset}): {errorDetail}");
             DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset {GamePartitionOffset}): {ex.Message}");
         }
 
@@ -130,9 +140,13 @@ public class VolumeDescriptor
                 isoSt.VolumeOffset = 0;
                 return descriptor;
             }
+
+            errors.Add("Sector 0 (Offset 0): Found data but magic ID mismatch (not a valid XISO)");
         }
         catch (Exception ex)
         {
+            var errorDetail = ex is EndOfStreamException ? "file too small" : ex.Message;
+            errors.Add($"Sector 0 (Offset 0): {errorDetail}");
             DebugLogger.WriteLine($"Error reading volume descriptor from sector 0: {ex.Message}");
 
             if (firstException != null)
@@ -148,9 +162,19 @@ public class VolumeDescriptor
         }
 
         // If we reach here, sectors were readable but failed validation
+        // Provide detailed diagnostic information
+        var fileSizeInfo = $"File size: {fileSize:N0} bytes ({fileSize / 1024.0 / 1024.0:F2} MB)";
+        var errorDetails = string.Join("\n  - ", errors);
+
         throw new InvalidImageException(
-            "Volume descriptor not found at sector 0 or 32 (including game partition offset). " +
-            "This doesn't appear to be a valid Xbox ISO file."
+            $"Volume descriptor not found. This doesn't appear to be a valid Xbox ISO file.\n\n" +
+            $"{fileSizeInfo}\n\n" +
+            $"Tried the following locations:\n  - {errorDetails}\n\n" +
+            $"Possible causes:\n" +
+            $"  - The file is not an Xbox ISO (may be a different format)\n" +
+            $"  - The ISO is corrupted or incomplete\n" +
+            $"  - The ISO uses an unsupported format variant\n\n" +
+            $"Expected magic ID: {System.Text.Encoding.ASCII.GetString(MagicId)}"
         );
     }
 

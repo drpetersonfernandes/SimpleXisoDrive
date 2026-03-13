@@ -84,13 +84,21 @@ file static class Program
                     break;
             }
 
-            if (!File.Exists(isoPath))
+            // Try to resolve the ISO path - handle cases where user provides path without .iso extension
+            var resolvedIsoPath = ResolveIsoPath(isoPath);
+            if (resolvedIsoPath == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 var errorMsg = $"ISO file not found at '{isoPath}'";
                 await Console.Error.WriteLineAsync($"Error: {errorMsg}");
 
-                // Add a hint for common command-line mistakes
+                // Add hints for common mistakes
+                if (!isoPath.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    await Console.Error.WriteLineAsync($"Hint: Tried looking for '{isoPath}.iso' but that wasn't found either.");
+                }
+
                 if (args.Length > 2 && !isoPath.Contains(' '))
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
@@ -108,6 +116,9 @@ file static class Program
                 Console.ReadKey();
                 return 1;
             }
+
+            // Use the resolved path for mounting
+            isoPath = resolvedIsoPath;
 
             if (isDragAndDrop)
             {
@@ -370,5 +381,57 @@ file static class Program
             _vfsContainer?.Dispose();
             DebugLogger.WriteLine("Unmounted.");
         }
+    }
+
+    /// <summary>
+    /// Resolves the ISO file path, handling cases where the user provides a path without the .iso extension.
+    /// Tries multiple strategies to find the file:
+    /// 1. Return original path if file exists
+    /// 2. If no extension, try appending .iso
+    /// 3. If just a filename, try looking in current directory
+    /// </summary>
+    private static string? ResolveIsoPath(string isoPath)
+    {
+        // 1. Check if the file exists as-is
+        if (File.Exists(isoPath))
+        {
+            return isoPath;
+        }
+
+        // 2. If no extension provided, try appending .iso
+        if (string.IsNullOrEmpty(Path.GetExtension(isoPath)))
+        {
+            var withExtension = isoPath + ".iso";
+            if (File.Exists(withExtension))
+            {
+                DebugLogger.WriteLine($"Resolved '{isoPath}' to '{withExtension}'");
+                return withExtension;
+            }
+        }
+
+        // 3. If it's just a filename (no path), try looking in current directory
+        if (!isoPath.Contains(Path.DirectorySeparatorChar) && !isoPath.Contains(Path.AltDirectorySeparatorChar))
+        {
+            var inCurrentDir = Path.Combine(Environment.CurrentDirectory, isoPath);
+            if (File.Exists(inCurrentDir))
+            {
+                DebugLogger.WriteLine($"Resolved '{isoPath}' to '{inCurrentDir}'");
+                return inCurrentDir;
+            }
+
+            // Also try with .iso extension in current directory
+            if (string.IsNullOrEmpty(Path.GetExtension(isoPath)))
+            {
+                var inCurrentDirWithExt = inCurrentDir + ".iso";
+                if (File.Exists(inCurrentDirWithExt))
+                {
+                    DebugLogger.WriteLine($"Resolved '{isoPath}' to '{inCurrentDirWithExt}'");
+                    return inCurrentDirWithExt;
+                }
+            }
+        }
+
+        // File not found
+        return null;
     }
 }

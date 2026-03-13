@@ -1,70 +1,37 @@
-/SimpleXisoDrive/bin/Debug/net9.0-windows/de/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/fr/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/sv/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/DokanNet.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/LTRData.Extensions.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/LTRData.Extensions.Native.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/Microsoft.Bcl.AsyncInterfaces.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/SimpleXisoDrive.deps.json
-/SimpleXisoDrive/bin/Debug/net9.0-windows/SimpleXisoDrive.dll
-/SimpleXisoDrive/bin/Debug/net9.0-windows/SimpleXisoDrive.exe
-/SimpleXisoDrive/bin/Debug/net9.0-windows/SimpleXisoDrive.runtimeconfig.json
-/SimpleXisoDrive/bin/Release/net9.0-windows/de/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/fr/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/sv/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/de/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/fr/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/publish/Launch.bat
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/publish/Launch xbox-iso-vfs.bat
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/sv/DokanNet.resources.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.BootConfig.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Btrfs.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Core.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Dmg.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Ext.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Fat.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.HfsPlus.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Iscsi.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Iso9660.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Lvm.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Net.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Nfs.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Ntfs.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.OpticalDiscSharing.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.OpticalDisk.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Registry.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Sdi.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.SquashFs.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Streams.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Swap.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Udf.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Vdi.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Vhd.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Vhdx.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Vmdk.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Wim.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Xfs.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DiscUtils.Xva.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/DokanNet.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/LTRData.Extensions.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/LTRData.Extensions.Native.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/lzfse.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/lzfse-net.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/lzo.net.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/Microsoft.Bcl.AsyncInterfaces.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/Microsoft.Win32.Registry.AccessControl.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/SimpleXisoDrive.deps.json
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/SimpleXisoDrive.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/SimpleXisoDrive.exe
-/SimpleXisoDrive/bin/Release/net9.0-windows/win-x64/SimpleXisoDrive.runtimeconfig.json
-/SimpleXisoDrive/bin/Release/net9.0-windows/debug.txt
-/SimpleXisoDrive/bin/Release/net9.0-windows/DokanNet.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/LTRData.Extensions.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/LTRData.Extensions.Native.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/Microsoft.Bcl.AsyncInterfaces.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.deps.json
-/SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.dll
-/SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.exe
-/SimpleXisoDrive/bin/Release/net9.0-windows/SimpleXisoDrive.runtimeconfig.json
-!/SimpleXisoDrive/bin/
+# Build outputs
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.cache
+
+# IDE files
+.idea/
+.vs/
+.vscode/
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+# NuGet Symbol Packages
+*.snupkg
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Logs
+*.log
+debug.txt
+
+# OS files
+.DS_Store
