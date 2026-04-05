@@ -19,7 +19,13 @@ file static class Program
         DebugLogger.WriteLine($"Arguments: {string.Join(" | ", args)}");
         DebugLogger.WriteLine($"Working Directory: {Environment.CurrentDirectory}");
 
-        IsDokanInstalled();
+        if (!IsDokanInstalled())
+        {
+            DebugLogger.WriteLine("Dokan is not installed. Exiting.");
+            DebugLogger.WriteLine("\nPress any key to exit.");
+            Console.ReadKey();
+            return 1;
+        }
 
         await UpdateChecker.CheckForUpdateAsync();
 
@@ -187,6 +193,27 @@ file static class Program
 
             return 1;
         }
+        catch (DllNotFoundException ex) when (ex.Message.Contains("dokan2.dll", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Error.WriteLine("Error: Failed to load the Dokan runtime library (dokan2.dll).");
+            Console.Error.WriteLine("The file may be corrupted, of the wrong architecture, or its dependencies are missing.");
+            Console.ResetColor();
+            Console.Error.WriteLine("");
+            Console.Error.WriteLine("To fix this:");
+            Console.Error.WriteLine("  1. Uninstall Dokan via Windows Settings > Apps");
+            Console.Error.WriteLine("  2. Download the latest version from: https://github.com/dokan-dev/dokany/releases");
+            Console.Error.WriteLine("  3. Install the package matching your system architecture (x64)");
+            Console.Error.WriteLine("  4. Restart your computer");
+            Console.Error.WriteLine("  5. Re-run SimpleXisoDrive");
+
+            await ErrorLogger.LogErrorAsync(ex, "Unable to load dokan2.dll or its dependencies.");
+            if (!isDragAndDrop) return 1;
+
+            DebugLogger.WriteLine("\nPress any key to exit.");
+            Console.ReadKey();
+            return 1;
+        }
         catch (Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -225,22 +252,50 @@ file static class Program
         };
     }
 
-    private static void IsDokanInstalled()
+    /// <summary>
+    /// Checks whether the Dokan runtime library (dokan2.dll) and driver (dokan2.sys) are installed.
+    /// Displays an error and exits if dokan2.dll is missing, since the application cannot function without it.
+    /// </summary>
+    /// <returns>True if dokan2.dll is found; false otherwise.</returns>
+    private static bool IsDokanInstalled()
     {
-        try
-        {
-            // Try to load the Dokan driver DLL
-            var dokanDllPath = Path.Combine(
-                Environment.SystemDirectory,
-                "drivers",
-                "dokan2.sys");
+        var dokanDllPath = Path.Combine(Environment.SystemDirectory, "dokan2.dll");
+        var dokanSysPath = Path.Combine(Environment.SystemDirectory, "drivers", "dokan2.sys");
 
-            File.Exists(dokanDllPath);
-        }
-        catch
+        var dllExists = File.Exists(dokanDllPath);
+        var sysExists = File.Exists(dokanSysPath);
+
+        if (!dllExists)
         {
-            // ignored
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.Error.WriteLine("Error: The Dokan runtime library (dokan2.dll) was not found.");
+            Console.Error.WriteLine("");
+            Console.ResetColor();
+            Console.Error.WriteLine("SimpleXisoDrive requires the Dokan User-Mode File System Library to operate.");
+            Console.Error.WriteLine("");
+            Console.Error.WriteLine("To fix this:");
+            Console.Error.WriteLine("  1. Download Dokan from: https://github.com/dokan-dev/dokany/releases");
+            Console.Error.WriteLine("  2. Install the package (the default installation includes dokan2.dll)");
+            Console.Error.WriteLine("  3. Restart your computer if prompted");
+            Console.Error.WriteLine("  4. Re-run SimpleXisoDrive");
+            Console.Error.WriteLine("");
+            Console.Error.WriteLine($"Expected file location: {dokanDllPath}");
+
+            DebugLogger.WriteLine($"Dokan check FAILED: {dokanDllPath} not found.");
+            return false;
         }
+
+        if (!sysExists)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Error.WriteLine("Warning: The Dokan driver (dokan2.sys) was not found.");
+            Console.Error.WriteLine("Mounting may fail. Please reinstall Dokan if you encounter issues.");
+            Console.ResetColor();
+            DebugLogger.WriteLine($"Dokan driver warning: {dokanSysPath} not found.");
+        }
+
+        DebugLogger.WriteLine($"Dokan check passed: {dokanDllPath} found.");
+        return true;
     }
 
     private static string? FindAvailableDriveLetter()
@@ -364,7 +419,7 @@ file static class Program
             }
 
             var tcs = new TaskCompletionSource();
-            await using (CancellationTokenSource.Token.Register(() => tcs.SetResult()))
+            await using (CancellationTokenSource.Token.Register(tcs.SetResult))
             {
                 await tcs.Task;
             }
