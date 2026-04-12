@@ -12,7 +12,7 @@ namespace SimpleXisoDrive.Services;
 public static class StatsService
 {
     // Base URL for the stats API - points to the local ApplicationStats service
-    private const string StatsApiBaseUrl = "http://localhost:5000";
+    private const string StatsApiBaseUrl = "https://www.purelogiccode.com";
     private const string StatsEndpoint = "/ApplicationStats/stats";
 
     // API Key for authentication - this should match the SecretKey in ApplicationStats appsettings.json
