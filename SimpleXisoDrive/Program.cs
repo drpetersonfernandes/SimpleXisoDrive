@@ -24,6 +24,9 @@ file static class Program
         DebugLogger.WriteLine($"Arguments: {string.Join(" | ", args)}");
         DebugLogger.WriteLine($"Working Directory: {Environment.CurrentDirectory}");
 
+        // Report launch statistics (fire and forget)
+        StatsService.ReportLaunchAsync();
+
         if (!IsDokanInstalled())
         {
             DebugLogger.WriteLine("Dokan is not installed. Exiting.");
@@ -116,7 +119,7 @@ file static class Program
                 }
 
                 // Report this to the API so the developer knows the path was invalid
-                await ErrorLogger.LogErrorAsync(new FileNotFoundException(errorMsg), "Mount attempt failed: File not found.");
+                await BugReport.LogErrorAsync(new FileNotFoundException(errorMsg), "Mount attempt failed: File not found.");
 
                 if (!isDragAndDrop) return 1;
 
@@ -174,7 +177,7 @@ file static class Program
         {
             Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
-            await ErrorLogger.LogErrorAsync(ex, "Invalid ISO image specified.");
+            await BugReport.LogErrorAsync(ex, "Invalid ISO image specified.");
             if (!isDragAndDrop) return 1;
 
             DebugLogger.WriteLine("\nPress any key to exit.");
@@ -185,7 +188,7 @@ file static class Program
         {
             Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Dokan Error: {ex.Message}");
-            await ErrorLogger.LogErrorAsync(ex, "A Dokan-specific error occurred during mounting.");
+            await BugReport.LogErrorAsync(ex, "A Dokan-specific error occurred during mounting.");
             if (!isDragAndDrop) return 1;
 
             DebugLogger.WriteLine("\nPress any key to exit.");
@@ -206,7 +209,7 @@ file static class Program
             Console.Error.WriteLine("  4. Restart your computer");
             Console.Error.WriteLine("  5. Re-run SimpleXisoDrive");
 
-            await ErrorLogger.LogErrorAsync(ex, "Unable to load dokan2.dll or its dependencies.");
+            await BugReport.LogErrorAsync(ex, "Unable to load dokan2.dll or its dependencies.");
             if (!isDragAndDrop) return 1;
 
             DebugLogger.WriteLine("\nPress any key to exit.");
@@ -218,7 +221,7 @@ file static class Program
             Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
 
-            await ErrorLogger.LogErrorAsync(ex, "Fatal error in Main");
+            await BugReport.LogErrorAsync(ex, "Fatal error in Main");
 
             // If we are in a context where the window might disappear (Drag & Drop or single arg)
             if (isDragAndDrop || args.Length <= 1)
@@ -238,14 +241,14 @@ file static class Program
         {
             if (e.ExceptionObject is Exception ex)
             {
-                ErrorLogger.LogFatalException(ex, "CRITICAL: Unhandled Global Exception");
+                BugReport.LogFatalException(ex, "CRITICAL: Unhandled Global Exception");
             }
         };
 
         // Catches exceptions thrown in background Tasks that were not awaited
         TaskScheduler.UnobservedTaskException += static (_, e) =>
         {
-            ErrorLogger.LogFatalException(e.Exception, "CRITICAL: Unobserved Task Exception");
+            BugReport.LogFatalException(e.Exception, "CRITICAL: Unobserved Task Exception");
             e.SetObserved();
         };
     }
@@ -409,7 +412,7 @@ file static class Program
                 catch (Exception ex)
                 {
                     DebugLogger.WriteLine($"Failed to open Windows Explorer: {ex.Message}");
-                    await ErrorLogger.LogErrorAsync(ex, $"Failed to launch explorer at '{mountPath}'.");
+                    await BugReport.LogErrorAsync(ex, $"Failed to launch explorer at '{mountPath}'.");
                 }
             }
 

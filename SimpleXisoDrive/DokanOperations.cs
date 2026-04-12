@@ -27,7 +27,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
             Logger.Error($"[BUG REPORTED] {operation} failed for '{fileName}': {ex.Message}");
 
             // Fire and forget the error report so the filesystem remains responsive
-            _ = ErrorLogger.LogErrorAsync(ex, $"Dokan Operation: {operation} | File: {fileName}");
+            _ = BugReport.LogErrorAsync(ex, $"Dokan Operation: {operation} | File: {fileName}");
 
             return DokanResult.Error;
         }
@@ -267,7 +267,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
         }
         catch (Exception ex)
         {
-            _ = ErrorLogger.LogErrorAsync(ex, "GetVolumeInformation failed");
+            _ = BugReport.LogErrorAsync(ex, "GetVolumeInformation failed");
             return DokanResult.Error;
         }
     }
@@ -286,7 +286,7 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
             freeBytesAvailable = 0;
             totalNumberOfBytes = 0;
             totalNumberOfFreeBytes = 0;
-            _ = ErrorLogger.LogErrorAsync(ex, "GetDiskFreeSpace failed");
+            _ = BugReport.LogErrorAsync(ex, "GetDiskFreeSpace failed");
             return DokanResult.Error;
         }
     }

@@ -42,7 +42,7 @@ public static class DebugLogger
                 }
 
                 // Report file logging failure to API
-                _ = ErrorLogger.LogErrorAsync(ex, "DebugLogger file write failed");
+                _ = BugReport.LogErrorAsync(ex, "DebugLogger file write failed");
             }
         }
     }

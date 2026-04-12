@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace SimpleXisoDrive.Services;
 
-public static class ErrorLogger
+public static class BugReport
 {
     private const string ApiKey = "hjh7yu6t56tyr540o9u8767676r5674534453235264c75b6t7ggghgg76trf564e";
     private const string BugReportApiUrl = "https://www.purelogiccode.com/bugreport/api/send-bug-report";
@@ -21,7 +21,7 @@ public static class ErrorLogger
     private static readonly string ErrorLogFilePath = Path.Combine(BaseDirectory, "error.log");
     private static readonly string CriticalLogFilePath = Path.Combine(BaseDirectory, "critical_error.log");
 
-    static ErrorLogger()
+    static BugReport()
     {
         HttpClientInstance = new HttpClient
         {
@@ -82,7 +82,7 @@ public static class ErrorLogger
     {
         if (ex == null)
         {
-            ex = new ArgumentNullException(nameof(ex), "ErrorLogger.LogErrorAsync was called with a null exception object.");
+            ex = new ArgumentNullException(nameof(ex), "BugReport.LogErrorAsync was called with a null exception object.");
             try
             {
                 throw ex;

@@ -99,7 +99,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error in FindEntryInDirectory: {ex.Message}");
-            _ = ErrorLogger.LogErrorAsync(ex, $"Error in FindEntryInDirectory for target '{targetName}'");
+            _ = BugReport.LogErrorAsync(ex, $"Error in FindEntryInDirectory for target '{targetName}'");
             return null;
         }
     }
@@ -165,7 +165,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error traversing binary tree: {ex.Message}");
-            _ = ErrorLogger.LogErrorAsync(ex, "Error traversing binary tree in GetAllEntriesFromBinaryTree");
+            _ = BugReport.LogErrorAsync(ex, "Error traversing binary tree in GetAllEntriesFromBinaryTree");
         }
 
         return entries;
@@ -191,7 +191,7 @@ public class VfsContainer : IDisposable
             if (++iterations > maxIterations)
             {
                 DebugLogger.WriteLine("TraverseBinaryTreeForAll: Max iterations reached, possible corrupted tree structure");
-                _ = ErrorLogger.LogErrorAsync(new InvalidOperationException("Max iterations reached in TraverseBinaryTreeForAll"),
+                _ = BugReport.LogErrorAsync(new InvalidOperationException("Max iterations reached in TraverseBinaryTreeForAll"),
                     "Possible corrupted binary tree structure - too many nodes");
                 break;
             }
@@ -239,7 +239,7 @@ public class VfsContainer : IDisposable
         catch (Exception ex)
         {
             DebugLogger.WriteLine($"Error in binary tree traversal: {ex.Message}");
-            _ = ErrorLogger.LogErrorAsync(ex, "Error in binary tree traversal (TraverseBinaryTree)");
+            _ = BugReport.LogErrorAsync(ex, "Error in binary tree traversal (TraverseBinaryTree)");
         }
 
         return null;
@@ -271,7 +271,7 @@ public class VfsContainer : IDisposable
             if (++iterations > maxIterations)
             {
                 DebugLogger.WriteLine("SearchBinaryTree: Max iterations reached, possible corrupted tree structure");
-                _ = ErrorLogger.LogErrorAsync(new InvalidOperationException("Max iterations reached in SearchBinaryTree"),
+                _ = BugReport.LogErrorAsync(new InvalidOperationException("Max iterations reached in SearchBinaryTree"),
                     "Possible corrupted binary tree structure - too many nodes or circular reference");
                 break;
             }
@@ -320,7 +320,7 @@ public class VfsContainer : IDisposable
         }
         catch (Exception ex)
         {
-            _ = ErrorLogger.LogErrorAsync(ex, $"VfsContainer.ReadFile failed for {entry.FileName}");
+            _ = BugReport.LogErrorAsync(ex, $"VfsContainer.ReadFile failed for {entry.FileName}");
             return 0;
         }
     }

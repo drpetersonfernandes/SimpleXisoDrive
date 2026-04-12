@@ -90,7 +90,7 @@ public static partial class UpdateChecker
         catch (Exception ex)
         {
             // Non-fatal: log and continue
-            await ErrorLogger.LogErrorAsync(ex, "UpdateChecker.CheckForUpdateAsync");
+            await BugReport.LogErrorAsync(ex, "UpdateChecker.CheckForUpdateAsync");
         }
     }
 

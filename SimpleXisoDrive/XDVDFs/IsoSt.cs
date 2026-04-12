@@ -62,7 +62,7 @@ public class IsoSt : IDisposable
             catch (Exception ex)
             {
                 DebugLogger.WriteLine($"Read error at sector {entry.StartSector}, offset {offset}: {ex.Message}");
-                _ = ErrorLogger.LogErrorAsync(ex, $"Physical Read Failure: Sector {entry.StartSector}, Offset {offset}, File: {entry.FileName}");
+                _ = BugReport.LogErrorAsync(ex, $"Physical Read Failure: Sector {entry.StartSector}, Offset {offset}, File: {entry.FileName}");
                 return 0;
             }
         }
@@ -95,7 +95,7 @@ public class IsoSt : IDisposable
             catch (Exception ex)
             {
                 DebugLogger.WriteLine($"Failed to read FileEntry at sector {sector}, offset {offset}: {ex.Message}");
-                _ = ErrorLogger.LogErrorAsync(ex, $"Failed to read FileEntry at sector {sector}, offset {offset}");
+                _ = BugReport.LogErrorAsync(ex, $"Failed to read FileEntry at sector {sector}, offset {offset}");
                 return null;
             }
         }
