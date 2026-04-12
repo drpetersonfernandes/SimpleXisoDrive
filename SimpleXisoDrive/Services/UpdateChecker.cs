@@ -57,9 +57,8 @@ public static partial class UpdateChecker
             if (latest <= current) return;
 
             Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"A newer version of {RepoName} is available:");
-            Console.ResetColor();
             Console.WriteLine($"  Current : {current}");
             Console.WriteLine($"  Latest  : {latest}");
             Console.Write("Open the release page in your browser? [Y/n] ");

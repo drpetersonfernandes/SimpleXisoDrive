@@ -15,6 +15,7 @@ public static class ErrorLogger
     private static readonly HttpClient HttpClientInstance;
     private static readonly bool IsApiLoggingConfigured;
     private static readonly object FileLock = new();
+    private static bool _isDisposed;
 
     private static readonly string BaseDirectory = AppDomain.CurrentDomain.BaseDirectory;
     private static readonly string ErrorLogFilePath = Path.Combine(BaseDirectory, "error.log");
@@ -30,6 +31,20 @@ public static class ErrorLogger
         // API logging is configured if the key and URL are present.
         IsApiLoggingConfigured = !string.IsNullOrWhiteSpace(ApiKey) &&
                                  !string.IsNullOrWhiteSpace(BugReportApiUrl);
+
+        // Register for process exit to properly dispose HttpClient
+        AppDomain.CurrentDomain.ProcessExit += static (_, _) => DisposeHttpClient();
+    }
+
+    /// <summary>
+    /// Disposes the static HttpClient instance. Called automatically on process exit.
+    /// </summary>
+    public static void DisposeHttpClient()
+    {
+        if (_isDisposed) return;
+
+        _isDisposed = true;
+        HttpClientInstance.Dispose();
     }
 
     private static string FormatErrorMessage(Exception ex, string contextMessage)
@@ -117,6 +132,7 @@ public static class ErrorLogger
 
     /// <summary>
     /// Logs a crash synchronously. Used for global exception handlers where the process is terminating.
+    /// Also attempts to report to the API (fire-and-forget since this is a sync method).
     /// </summary>
     public static void LogFatalException(Exception ex, string contextMessage)
     {
@@ -131,6 +147,22 @@ public static class ErrorLogger
             lock (FileLock)
             {
                 File.AppendAllText(ErrorLogFilePath, logContent, Encoding.UTF8);
+            }
+
+            // Report to API (fire-and-forget since this is a sync method)
+            if (IsApiLoggingConfigured)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await SendLogToApiAsync(ex, $"[FATAL] {contextMessage}");
+                    }
+                    catch
+                    {
+                        // Ignore API errors in fatal handler
+                    }
+                });
             }
         }
         catch (Exception writeEx)

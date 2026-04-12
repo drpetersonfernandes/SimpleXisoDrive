@@ -128,13 +128,32 @@ public class XboxIsoVfsDokan(VfsContainer vfs) : IDokanOperations
         var result = ExecuteWithReporting(nameof(GetFileInformation), fileName, () =>
         {
             var path = NormalizePath(fileName);
-            var entry = info.Context as FileEntry ?? _vfs.GetEntry(path);
+
+            // Safely get entry from context or lookup in VFS
+            FileEntry? entry = null;
+            try
+            {
+                entry = info.Context as FileEntry;
+            }
+            catch
+            {
+                // Context is not a FileEntry, will try lookup
+            }
+
+            entry ??= _vfs.GetEntry(path);
 
             if (entry == null) return DokanResult.FileNotFound;
 
+            // Ensure FileName is never null
+            var safeFileName = entry.FileName;
+            if (string.IsNullOrEmpty(safeFileName))
+            {
+                safeFileName = "Unknown";
+            }
+
             internalInfo = new FileInformation
             {
-                FileName = entry.FileName,
+                FileName = safeFileName,
                 Attributes = entry.GetWindowsAttributes(),
                 CreationTime = _vfs.VolumeCreationTime,
                 LastAccessTime = _vfs.VolumeCreationTime,

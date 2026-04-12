@@ -40,6 +40,9 @@ public static class DebugLogger
                 {
                     // Console might also be unavailable
                 }
+
+                // Report file logging failure to API
+                _ = ErrorLogger.LogErrorAsync(ex, "DebugLogger file write failed");
             }
         }
     }

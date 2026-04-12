@@ -12,6 +12,11 @@ file static class Program
 
     public static async Task<int> Main(string[] args)
     {
+        // Set Green CRT theme immediately
+        Console.BackgroundColor = ConsoleColor.Black;
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.Clear();
+
         // Hook global exception handlers immediately to catch crashes
         SetupGlobalExceptionHandlers();
 
@@ -62,15 +67,16 @@ file static class Program
                 case 1:
                     isDragAndDrop = true;
                     isoPath = args[0];
+                    if (string.IsNullOrEmpty(isoPath))
+                        throw new ArgumentException("ISO path cannot be null or empty");
                     if (isoPath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
                         throw new ArgumentException("Invalid path characters detected");
 
                     var availableMountPath = FindAvailableDriveLetter();
                     if (availableMountPath is null)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.ForegroundColor = ConsoleColor.Green;
                         await Console.Error.WriteLineAsync("Error: Could not find an available drive letter (M-R).");
-                        Console.ResetColor();
                         // For drag-and-drop, wait for a key press before exiting on error.
                         DebugLogger.WriteLine("\nPress any key to exit.");
                         Console.ReadKey();
@@ -94,24 +100,20 @@ file static class Program
             var resolvedIsoPath = ResolveIsoPath(isoPath);
             if (resolvedIsoPath == null)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.Green;
                 var errorMsg = $"ISO file not found at '{isoPath}'";
                 await Console.Error.WriteLineAsync($"Error: {errorMsg}");
 
                 // Add hints for common mistakes
                 if (!isoPath.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
                     await Console.Error.WriteLineAsync($"Hint: Tried looking for '{isoPath}.iso' but that wasn't found either.");
                 }
 
                 if (args.Length > 2 && !isoPath.Contains(' '))
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
                     await Console.Error.WriteLineAsync("Hint: If your file path contains spaces, ensure it is wrapped in \"quotes\".");
                 }
-
-                Console.ResetColor();
 
                 // Report this to the API so the developer knows the path was invalid
                 await ErrorLogger.LogErrorAsync(new FileNotFoundException(errorMsg), "Mount attempt failed: File not found.");
@@ -170,9 +172,8 @@ file static class Program
         }
         catch (InvalidImageException ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
-            Console.ResetColor();
             await ErrorLogger.LogErrorAsync(ex, "Invalid ISO image specified.");
             if (!isDragAndDrop) return 1;
 
@@ -182,9 +183,8 @@ file static class Program
         }
         catch (DokanException ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Dokan Error: {ex.Message}");
-            Console.ResetColor();
             await ErrorLogger.LogErrorAsync(ex, "A Dokan-specific error occurred during mounting.");
             if (!isDragAndDrop) return 1;
 
@@ -195,10 +195,9 @@ file static class Program
         }
         catch (DllNotFoundException ex) when (ex.Message.Contains("dokan2.dll", StringComparison.OrdinalIgnoreCase))
         {
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.Error.WriteLine("Error: Failed to load the Dokan runtime library (dokan2.dll).");
             Console.Error.WriteLine("The file may be corrupted, of the wrong architecture, or its dependencies are missing.");
-            Console.ResetColor();
             Console.Error.WriteLine("");
             Console.Error.WriteLine("To fix this:");
             Console.Error.WriteLine("  1. Uninstall Dokan via Windows Settings > Apps");
@@ -216,9 +215,8 @@ file static class Program
         }
         catch (Exception ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
-            Console.ResetColor();
 
             await ErrorLogger.LogErrorAsync(ex, "Fatal error in Main");
 
@@ -267,10 +265,9 @@ file static class Program
 
         if (!dllExists)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.Error.WriteLine("Error: The Dokan runtime library (dokan2.dll) was not found.");
             Console.Error.WriteLine("");
-            Console.ResetColor();
             Console.Error.WriteLine("SimpleXisoDrive requires the Dokan User-Mode File System Library to operate.");
             Console.Error.WriteLine("");
             Console.Error.WriteLine("To fix this:");
@@ -287,10 +284,9 @@ file static class Program
 
         if (!sysExists)
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.Error.WriteLine("Warning: The Dokan driver (dokan2.sys) was not found.");
             Console.Error.WriteLine("Mounting may fail. Please reinstall Dokan if you encounter issues.");
-            Console.ResetColor();
             DebugLogger.WriteLine($"Dokan driver warning: {dokanSysPath} not found.");
         }
 
@@ -353,10 +349,9 @@ file static class Program
         // Check for admin rights for drive letter mounting
         if (mountPath.EndsWith(":\\", StringComparison.Ordinal) && !CheckAccess.IsAdministrator())
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("WARNING: Administrator privileges are recommended for mounting drive letters.");
             Console.WriteLine("If mounting fails, try running as Administrator.");
-            Console.ResetColor();
             DebugLogger.WriteLine("Running without administrator privileges");
         }
 

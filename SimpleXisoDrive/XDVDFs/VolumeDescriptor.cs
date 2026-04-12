@@ -151,13 +151,18 @@ public class VolumeDescriptor
 
             if (firstException != null)
             {
-                throw new AggregateException(
+                var aggregateEx = new AggregateException(
                     "Failed to read volume descriptor from all known locations",
                     firstException,
                     ex
                 );
+                // Report to API before throwing
+                _ = ErrorLogger.LogErrorAsync(aggregateEx, "VolumeDescriptor.ReadFrom failed all locations");
+                throw aggregateEx;
             }
 
+            // Report single exception before throwing
+            _ = ErrorLogger.LogErrorAsync(ex, "VolumeDescriptor.ReadFrom failed at sector 0");
             throw;
         }
 

@@ -174,27 +174,29 @@ public class VfsContainer : IDisposable
     private void TraverseBinaryTreeForAll(FileEntry firstEntry, List<FileEntry> results, HashSet<(long Sector, long Offset)> visited)
     {
         var stack = new Stack<FileEntry>();
-        var current = firstEntry;
+        const int maxIterations = 100000; // Safety limit to prevent infinite loops
+        var iterations = 0;
 
-        while (current != null || stack.Count > 0)
+        // Check if first entry is valid and not already visited
+        if (!visited.Add((firstEntry.EntrySector, firstEntry.EntryOffset)))
         {
-            // Traverse to the leftmost node
-            while (current != null)
-            {
-                // Check if we've visited this node before processing
-                if (!visited.Add((current.EntrySector, current.EntryOffset)))
-                {
-                    current = null; // Skip duplicates
-                    continue;
-                }
+            return;
+        }
 
-                stack.Push(current);
-                current = current.HasLeftChild ? current.GetLeftChild(_isoSt) : null;
+        stack.Push(firstEntry);
+
+        while (stack.Count > 0)
+        {
+            // Safety check for infinite loops
+            if (++iterations > maxIterations)
+            {
+                DebugLogger.WriteLine("TraverseBinaryTreeForAll: Max iterations reached, possible corrupted tree structure");
+                _ = ErrorLogger.LogErrorAsync(new InvalidOperationException("Max iterations reached in TraverseBinaryTreeForAll"),
+                    "Possible corrupted binary tree structure - too many nodes");
+                break;
             }
 
-            if (stack.Count == 0) break;
-
-            current = stack.Pop();
+            var current = stack.Pop();
 
             // Process current node
             if (!string.IsNullOrEmpty(current.FileName))
@@ -202,8 +204,25 @@ public class VfsContainer : IDisposable
                 results.Add(current);
             }
 
-            // Move to the right subtree
-            current = current.HasRightChild ? current.GetRightChild(_isoSt) : null;
+            // Push right child first (so left is processed first - LIFO)
+            if (current.HasRightChild)
+            {
+                var rightChild = current.GetRightChild(_isoSt);
+                if (rightChild != null && visited.Add((rightChild.EntrySector, rightChild.EntryOffset)))
+                {
+                    stack.Push(rightChild);
+                }
+            }
+
+            // Push left child
+            if (current.HasLeftChild)
+            {
+                var leftChild = current.GetLeftChild(_isoSt);
+                if (leftChild != null && visited.Add((leftChild.EntrySector, leftChild.EntryOffset)))
+                {
+                    stack.Push(leftChild);
+                }
+            }
         }
     }
 
@@ -231,21 +250,33 @@ public class VfsContainer : IDisposable
         if (startNode == null) return null;
 
         var stack = new Stack<FileEntry>();
-        stack.Push(startNode);
+        const int maxIterations = 100000; // Safety limit to prevent infinite loops
+        var iterations = 0;
 
         // Track visited nodes to prevent infinite loops (Cycle Detection)
         // Key is (Sector, Offset)
-        var visited = new HashSet<(long, long)>();
+        var visited = new HashSet<(long Sector, long Offset)>();
+
+        // Check if start node is valid and not already visited
+        if (!visited.Add((startNode.EntrySector, startNode.EntryOffset)))
+        {
+            return null;
+        }
+
+        stack.Push(startNode);
 
         while (stack.Count > 0)
         {
-            var current = stack.Pop();
-
-            // If we have already visited this node, skip it to prevent cycles
-            if (!visited.Add((current.EntrySector, current.EntryOffset)))
+            // Safety check for infinite loops
+            if (++iterations > maxIterations)
             {
-                continue;
+                DebugLogger.WriteLine("SearchBinaryTree: Max iterations reached, possible corrupted tree structure");
+                _ = ErrorLogger.LogErrorAsync(new InvalidOperationException("Max iterations reached in SearchBinaryTree"),
+                    "Possible corrupted binary tree structure - too many nodes or circular reference");
+                break;
             }
+
+            var current = stack.Pop();
 
             // Check if this is the entry we are looking for
             if (!string.IsNullOrEmpty(current.FileName) && predicate(current))
@@ -260,7 +291,8 @@ public class VfsContainer : IDisposable
             if (current.HasRightChild)
             {
                 var rightChild = current.GetRightChild(_isoSt);
-                if (rightChild != null)
+                // Only add if not null and not already visited
+                if (rightChild != null && visited.Add((rightChild.EntrySector, rightChild.EntryOffset)))
                 {
                     stack.Push(rightChild);
                 }
@@ -269,7 +301,8 @@ public class VfsContainer : IDisposable
             if (current.HasLeftChild)
             {
                 var leftChild = current.GetLeftChild(_isoSt);
-                if (leftChild != null)
+                // Only add if not null and not already visited
+                if (leftChild != null && visited.Add((leftChild.EntrySector, leftChild.EntryOffset)))
                 {
                     stack.Push(leftChild);
                 }
