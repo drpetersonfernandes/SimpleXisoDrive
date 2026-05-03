@@ -5,7 +5,7 @@ using SimpleXisoDrive.Services;
 
 namespace SimpleXisoDrive;
 
-file static class Program
+internal static class Program
 {
     private static VfsContainer? _vfsContainer;
     private static readonly CancellationTokenSource CancellationTokenSource = new();
@@ -108,6 +108,11 @@ file static class Program
                 await Console.Error.WriteLineAsync($"Error: {errorMsg}");
 
                 // Add hints for common mistakes
+                if (Directory.Exists(isoPath))
+                {
+                    await Console.Error.WriteLineAsync("Hint: The specified path is a directory. Please provide the path to a specific .iso file.");
+                }
+
                 if (!isoPath.EndsWith(".iso", StringComparison.OrdinalIgnoreCase))
                 {
                     await Console.Error.WriteLineAsync($"Hint: Tried looking for '{isoPath}.iso' but that wasn't found either.");
@@ -440,10 +445,11 @@ file static class Program
     /// Resolves the ISO file path, handling cases where the user provides a path without the .iso extension.
     /// Tries multiple strategies to find the file:
     /// 1. Return original path if file exists
-    /// 2. If no extension, try appending .iso
-    /// 3. If just a filename, try looking in current directory
+    /// 2. If path is a directory containing exactly one .iso file, resolve to it
+    /// 3. If no extension, try appending .iso
+    /// 4. If just a filename, try looking in current directory
     /// </summary>
-    private static string? ResolveIsoPath(string isoPath)
+    internal static string? ResolveIsoPath(string isoPath)
     {
         // 1. Check if the file exists as-is
         if (File.Exists(isoPath))
@@ -451,7 +457,29 @@ file static class Program
             return isoPath;
         }
 
-        // 2. If no extension provided, try appending .iso
+        // 2. If the path is a directory, look for a single .iso file inside it
+        if (Directory.Exists(isoPath))
+        {
+            try
+            {
+                var isoFiles = Directory.GetFiles(isoPath, "*.iso", SearchOption.TopDirectoryOnly);
+                switch (isoFiles.Length)
+                {
+                    case 1:
+                        DebugLogger.WriteLine($"Resolved directory '{isoPath}' to ISO file '{isoFiles[0]}'");
+                        return isoFiles[0];
+                    case > 1:
+                        DebugLogger.WriteLine($"Directory '{isoPath}' contains multiple .iso files; cannot auto-resolve.");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugLogger.WriteLine($"Error scanning directory '{isoPath}' for ISO files: {ex.Message}");
+            }
+        }
+
+        // 3. If no extension provided, try appending .iso
         if (string.IsNullOrEmpty(Path.GetExtension(isoPath)))
         {
             var withExtension = isoPath + ".iso";
@@ -462,7 +490,7 @@ file static class Program
             }
         }
 
-        // 3. If it's just a filename (no path), try looking in current directory
+        // 4. If it's just a filename (no path), try looking in current directory
         if (!isoPath.Contains(Path.DirectorySeparatorChar) && !isoPath.Contains(Path.AltDirectorySeparatorChar))
         {
             var inCurrentDir = Path.Combine(Environment.CurrentDirectory, isoPath);
