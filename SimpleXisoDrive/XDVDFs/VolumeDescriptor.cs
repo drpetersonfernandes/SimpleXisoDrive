@@ -156,13 +156,9 @@ public class VolumeDescriptor
                     firstException,
                     ex
                 );
-                // Report to API before throwing
-                _ = BugReport.LogErrorAsync(aggregateEx, "VolumeDescriptor.ReadFrom failed all locations");
                 throw aggregateEx;
             }
 
-            // Report single exception before throwing
-            _ = BugReport.LogErrorAsync(ex, "VolumeDescriptor.ReadFrom failed at sector 0");
             throw;
         }
 

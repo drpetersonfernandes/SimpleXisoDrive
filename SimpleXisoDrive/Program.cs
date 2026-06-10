@@ -182,7 +182,6 @@ internal static class Program
         {
             Console.ForegroundColor = ConsoleColor.Green;
             await Console.Error.WriteLineAsync($"Error: {ex.Message}");
-            await BugReport.LogErrorAsync(ex, "Invalid ISO image specified.");
             if (!isDragAndDrop) return 1;
 
             DebugLogger.WriteLine("\nPress any key to exit.");
