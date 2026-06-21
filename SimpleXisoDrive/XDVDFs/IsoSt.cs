@@ -9,7 +9,7 @@ namespace SimpleXisoDrive.XDVDFs;
 public class IsoSt : IDisposable
 {
     public const int SectorSize = 2048; // XDVDFS sector size is always 2048 bytes
-    private readonly FileStream _fileStream;
+    private readonly Stream _fileStream;
 
     // Global offset for the volume (e.g. for dual-layer/hybrid discs)
     public long VolumeOffset { get; set; }
@@ -26,6 +26,15 @@ public class IsoSt : IDisposable
         // while SimpleXisoDrive has it open.
         _fileStream = new FileStream(isoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         Reader = new BinaryReader(_fileStream);
+    }
+
+    /// <summary>
+    /// Internal constructor for testing with a MemoryStream.
+    /// </summary>
+    internal IsoSt(Stream stream)
+    {
+        _fileStream = stream;
+        Reader = new BinaryReader(stream);
     }
 
     /// <summary>
