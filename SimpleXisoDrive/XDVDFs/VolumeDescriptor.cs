@@ -7,9 +7,15 @@ public class VolumeDescriptor
     public uint Sector { get; }
     private const int VolumeDescriptorSector = 32;
 
-    // Offset used in xbox-iso-vfs for dual layer / game partitions
+    // Offset used in xbox-iso-vfs for dual layer / game partitions (XGD1)
     // 2048 * 32 * 6192 = 405,798,912 bytes
-    private const long GamePartitionOffset = 2048L * 32 * 6192;
+    private const long Xgd1PartitionOffset = 2048L * 32 * 6192;
+
+    // XGD3 partition offset (from extract-xiso.c: XGD3_LSEEK_OFFSET)
+    private const long Xgd3PartitionOffset = 0x02080000L; // 34,078,720 bytes
+
+    // GLOBAL partition offset (from extract-xiso.c: GLOBAL_LSEEK_OFFSET)
+    private const long GlobalPartitionOffset = 0x0FD90000L; // 265,879,552 bytes
 
     private static readonly byte[] MagicId = "MICROSOFT*XBOX*MEDIA"u8.ToArray();
 
@@ -50,7 +56,14 @@ public class VolumeDescriptor
             RootDirTableSector = reader.ReadUInt32();
             reader.ReadUInt32();
             var fileTime = reader.ReadInt64();
-            CreationTime = DateTime.FromFileTime(fileTime);
+            try
+            {
+                CreationTime = DateTime.FromFileTime(fileTime);
+            }
+            catch
+            {
+                CreationTime = DateTime.MinValue;
+            }
 
             // Seek to second magic ID position
             var secondMagicPos = sectorStart + 0x7EC;
@@ -78,10 +91,12 @@ public class VolumeDescriptor
 
     /// <summary>
     /// Reads the volume descriptor from the stream using IsoSt.
-    /// Replicates logic from xbox-iso-vfs:
-    /// 1. Try Sector 32 (Offset 0)
-    /// 2. Try Sector 32 (Offset GamePartitionOffset)
-    /// 3. Try Sector 0 (Offset 0) - Common XISO fallback
+    /// Replicates logic from extract-xiso.c:
+    /// 1. Try Sector 32 (Offset 0) - Standard Xbox
+    /// 2. Try Sector 32 (Offset GlobalPartitionOffset) - GLOBAL format
+    /// 3. Try Sector 32 (Offset Xgd3PartitionOffset) - XGD3 format
+    /// 4. Try Sector 32 (Offset Xgd1PartitionOffset) - XGD1 Dual Layer
+    /// 5. Try Sector 0 (Offset 0) - Common XISO fallback
     /// </summary>
     public static VolumeDescriptor ReadFrom(IsoSt isoSt)
     {
@@ -109,28 +124,70 @@ public class VolumeDescriptor
             DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset 0): {ex.Message}");
         }
 
-        // 2. Try standard sector 32, Offset GamePartitionOffset (Dual Layer / Hybrid)
+        // 2. Try Sector 32, Offset GlobalPartitionOffset (GLOBAL format)
         try
         {
-            DebugLogger.WriteLine($"Checking for Game Partition at offset {GamePartitionOffset}...");
-            var descriptor = new VolumeDescriptor(isoSt, VolumeDescriptorSector, GamePartitionOffset);
+            DebugLogger.WriteLine($"Checking for Global Partition at offset {GlobalPartitionOffset}...");
+            var descriptor = new VolumeDescriptor(isoSt, VolumeDescriptorSector, GlobalPartitionOffset);
             if (descriptor.Validate())
             {
-                isoSt.VolumeOffset = GamePartitionOffset;
-                DebugLogger.WriteLine($"Detected Game Partition at offset {GamePartitionOffset}");
+                isoSt.VolumeOffset = GlobalPartitionOffset;
+                DebugLogger.WriteLine($"Detected Global Partition at offset {GlobalPartitionOffset}");
                 return descriptor;
             }
 
-            errors.Add($"Sector 32 (Offset {GamePartitionOffset}): Found data but magic ID mismatch (not a valid game partition)");
+            errors.Add($"Sector 32 (Offset {GlobalPartitionOffset}): Found data but magic ID mismatch (not a valid global partition)");
         }
         catch (Exception ex)
         {
-            var errorDetail = ex is EndOfStreamException ? "file too small for game partition" : ex.Message;
-            errors.Add($"Sector 32 (Offset {GamePartitionOffset}): {errorDetail}");
-            DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset {GamePartitionOffset}): {ex.Message}");
+            var errorDetail = ex is EndOfStreamException ? "file too small for global partition" : ex.Message;
+            errors.Add($"Sector 32 (Offset {GlobalPartitionOffset}): {errorDetail}");
+            DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset {GlobalPartitionOffset}): {ex.Message}");
         }
 
-        // 3. Try rebuilt XISO format at sector 0, Offset 0
+        // 3. Try Sector 32, Offset Xgd3PartitionOffset (XGD3 format)
+        try
+        {
+            DebugLogger.WriteLine($"Checking for XGD3 Partition at offset {Xgd3PartitionOffset}...");
+            var descriptor = new VolumeDescriptor(isoSt, VolumeDescriptorSector, Xgd3PartitionOffset);
+            if (descriptor.Validate())
+            {
+                isoSt.VolumeOffset = Xgd3PartitionOffset;
+                DebugLogger.WriteLine($"Detected XGD3 Partition at offset {Xgd3PartitionOffset}");
+                return descriptor;
+            }
+
+            errors.Add($"Sector 32 (Offset {Xgd3PartitionOffset}): Found data but magic ID mismatch (not a valid XGD3 partition)");
+        }
+        catch (Exception ex)
+        {
+            var errorDetail = ex is EndOfStreamException ? "file too small for XGD3 partition" : ex.Message;
+            errors.Add($"Sector 32 (Offset {Xgd3PartitionOffset}): {errorDetail}");
+            DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset {Xgd3PartitionOffset}): {ex.Message}");
+        }
+
+        // 4. Try Sector 32, Offset Xgd1PartitionOffset (XGD1 Dual Layer / Hybrid)
+        try
+        {
+            DebugLogger.WriteLine($"Checking for XGD1 Game Partition at offset {Xgd1PartitionOffset}...");
+            var descriptor = new VolumeDescriptor(isoSt, VolumeDescriptorSector, Xgd1PartitionOffset);
+            if (descriptor.Validate())
+            {
+                isoSt.VolumeOffset = Xgd1PartitionOffset;
+                DebugLogger.WriteLine($"Detected XGD1 Game Partition at offset {Xgd1PartitionOffset}");
+                return descriptor;
+            }
+
+            errors.Add($"Sector 32 (Offset {Xgd1PartitionOffset}): Found data but magic ID mismatch (not a valid XGD1 partition)");
+        }
+        catch (Exception ex)
+        {
+            var errorDetail = ex is EndOfStreamException ? "file too small for XGD1 partition" : ex.Message;
+            errors.Add($"Sector 32 (Offset {Xgd1PartitionOffset}): {errorDetail}");
+            DebugLogger.WriteLine($"Error reading volume descriptor from sector 32 (Offset {Xgd1PartitionOffset}): {ex.Message}");
+        }
+
+        // 5. Try rebuilt XISO format at sector 0, Offset 0
         try
         {
             DebugLogger.WriteLine("Checking for rebuilt XISO format at sector 0...");

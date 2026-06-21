@@ -19,4 +19,16 @@
         <PackageReference Include="DokanNet" Version="2.3.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Remove="References\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Remove="References\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Page Remove="References\**" />
+    </ItemGroup>
+
 </Project>
